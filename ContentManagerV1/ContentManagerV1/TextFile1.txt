@@ -1,0 +1,11 @@
+﻿
+- seperate directories for object store and directory structure. Want to be able to combine object store but have multiple directories. 
+Should be able to copy this elsewhere for compare, e.g. online.
+
+- provide means to have list of hash values so can check for duplicates when away from object store.
+
+- how to handle permissions problems?
+  maybe have an "invalid hash" value, link files to that, note in Xml if permissions problem.
+
+
+

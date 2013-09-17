@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContentManagerV1", "ContentManagerV1\ContentManagerV1.csproj", "{C2791C5B-CCA6-4712-91AF-1E98BB48A26A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObjectStoreViewer", "ObjectStoreViewer\ObjectStoreViewer.csproj", "{5C72D583-5CD5-4A1E-BA1C-54A1D73603D7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MpvUtilities", "MpvUtilities\MpvUtilities.csproj", "{92D45275-0E7E-4FFE-BED5-919EC987315D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtractDirectory", "ExtractDirectory\ExtractDirectory.csproj", "{EBB233CD-3FB9-464A-A960-ECC320655821}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C2791C5B-CCA6-4712-91AF-1E98BB48A26A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2791C5B-CCA6-4712-91AF-1E98BB48A26A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2791C5B-CCA6-4712-91AF-1E98BB48A26A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2791C5B-CCA6-4712-91AF-1E98BB48A26A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C72D583-5CD5-4A1E-BA1C-54A1D73603D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C72D583-5CD5-4A1E-BA1C-54A1D73603D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C72D583-5CD5-4A1E-BA1C-54A1D73603D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C72D583-5CD5-4A1E-BA1C-54A1D73603D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92D45275-0E7E-4FFE-BED5-919EC987315D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92D45275-0E7E-4FFE-BED5-919EC987315D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92D45275-0E7E-4FFE-BED5-919EC987315D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92D45275-0E7E-4FFE-BED5-919EC987315D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EBB233CD-3FB9-464A-A960-ECC320655821}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBB233CD-3FB9-464A-A960-ECC320655821}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBB233CD-3FB9-464A-A960-ECC320655821}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBB233CD-3FB9-464A-A960-ECC320655821}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
