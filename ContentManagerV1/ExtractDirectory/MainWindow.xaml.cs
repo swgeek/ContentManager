@@ -16,19 +16,39 @@ using MpvUtilities;
 
 namespace ExtractDirectory
 {
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
+        string sourceBaseDir = String.Empty;
+        string destBaseDir = String.Empty;
+
         public MainWindow()
         {
             InitializeComponent();
         }
 
-        private void OnPickRootDirectoryButtonClick(object sender, RoutedEventArgs e)
+        private void OnPickArchiveRootDirButtonClick(object sender, RoutedEventArgs e)
         {
-            string rootDirXml = MpvUtilities.FilePickerUtility.PickFile();
+            sourceBaseDir = MpvUtilities.FilePickerUtility.PickDirectory();
+            
+        }
+
+
+        private void OnPickDestinationDirectoryButtonClick(object sender, RoutedEventArgs e)
+        {
+            destBaseDir = MpvUtilities.FilePickerUtility.PickDirectory();
+        }
+
+
+        private void OnStartExtractButtonClick(object sender, RoutedEventArgs e)
+        {
+            if (sourceBaseDir == String.Empty || destBaseDir == String.Empty)
+                return;
+
+            ExtractEverything.ExtractFilesAndDirs(sourceBaseDir, destBaseDir);
         }
     }
 }

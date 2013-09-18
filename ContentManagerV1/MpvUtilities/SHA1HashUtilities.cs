@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 using System.Security.Cryptography;
 using System.IO;
 
-namespace ContentManagerV1
+namespace MpvUtilities
 {
-    class SH1HashUtilities
+    public class SH1HashUtilities
     {
         static public string HashToString(byte[] hashValue)
         {
@@ -82,3 +82,5 @@ namespace ContentManagerV1
         }
     }
 }
+
+

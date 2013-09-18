@@ -6,8 +6,11 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        
-        <Button Margin="10" Content="Pick Root Directory" Click="OnPickRootDirectoryButtonClick" />
+
+        <Button Margin="10" Content="Pick Archive Root Directory" Click="OnPickArchiveRootDirButtonClick" />
+        <Button Margin="10" Content="Pick Destination Directory" Click="OnPickDestinationDirectoryButtonClick"  Grid.Row="1" />
+        <Button Margin="10" Content="Extract Files and Directories" Click="OnStartExtractButtonClick" Grid.Row="2" />
     </Grid>
 </Window>
