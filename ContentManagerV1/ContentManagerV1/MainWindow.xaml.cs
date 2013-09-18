@@ -67,7 +67,8 @@ namespace ContentManagerV1
                     Directory.CreateDirectory(workingDestDirName);
 
                 XDocument rootDirXmlDoc = FileXmlUtilities.GenerateRootDirInfoDocument(sourceDirName);
-                string rootDirXmlPath = System.IO.Path.Combine(workingDestDirName, "RootDir.xml");
+                string hashValue = SH1HashUtilities.HashString(sourceDirName);
+                string rootDirXmlPath = System.IO.Path.Combine(workingDestDirName, hashValue + ".xml");
                 rootDirXmlDoc.Save(rootDirXmlPath);
             }
             else
