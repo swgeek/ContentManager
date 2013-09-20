@@ -49,8 +49,8 @@ namespace MpvUtilities
             }
             catch
             {
-                // probably permissions problems, return null for now, through propogating exception may be better. think it through later.
-                return null;
+                // probably permissions problems
+                throw new Exception(fileName + "could not be opened for read");
             }
 
             byte[] hashBytes = hasher.ComputeHash(fileStream);
