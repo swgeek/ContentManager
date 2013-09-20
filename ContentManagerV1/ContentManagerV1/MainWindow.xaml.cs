@@ -29,6 +29,7 @@ namespace ContentManagerV1
         private string rootDestDirName = String.Empty;
         private string objectDestDirName = String.Empty;
         private string workingDestDirName = String.Empty;
+        private string otherArchiveDbDirName = String.Empty;
 
         bool stopProcessing = false;
         FileList filelist = null;
@@ -38,13 +39,38 @@ namespace ContentManagerV1
             InitializeComponent();
         }
 
+        private bool CheckIfFileInOtherArchiveDb(string hashValue)
+        {
+            if (otherArchiveDbDirName == string.Empty)
+                return false;
+
+            string dbFileName = hashValue.Substring(0, 2) + ".txt";
+            string dbFileFullPath = System.IO.Path.Combine(otherArchiveDbDirName, dbFileName);
+            if (!File.Exists(dbFileFullPath))
+                return false;
+
+            string[] archivedFileList = File.ReadAllLines(dbFileFullPath);
+
+            if (archivedFileList.Contains(hashValue))
+                return true;
+            else
+                return false;
+        }
+
         private void OnGetFilesButtonClick(object sender, RoutedEventArgs e)
         {
             sourceDirName = sourceDirectoryTextBlock.Text;
             rootDestDirName = destinationDirectoryTextBlock.Text;
+            otherArchiveDbDirName = alreadyArchivedDbDirectoryTextBlock.Text;
 
             if (sourceDirName == String.Empty || rootDestDirName == String.Empty)
                 return;
+
+            if (otherArchiveDbDirName != String.Empty)
+            {
+                if (!Directory.Exists(otherArchiveDbDirName))
+                    throw new Exception(otherArchiveDbDirName + " does not exist!");
+            }
 
             DirectoryInfo sourceDir = new DirectoryInfo(sourceDirName);
 
@@ -52,7 +78,6 @@ namespace ContentManagerV1
             {
                 filelist = TraverseDir.GetAllFilesInDir(sourceDir);
                 countRemainingTextBlock.Text = filelist.Count.ToString();
-                filelistTextBox.Text = filelist.FileNames();
                 getFilesButton.Visibility = System.Windows.Visibility.Collapsed;
                 hashFilesbutton.Visibility = System.Windows.Visibility.Visible;
 
@@ -70,6 +95,9 @@ namespace ContentManagerV1
                 string hashValue = SH1HashUtilities.HashString(sourceDirName);
                 string rootDirXmlPath = System.IO.Path.Combine(workingDestDirName, hashValue + ".xml");
                 rootDirXmlDoc.Save(rootDirXmlPath);
+
+                File.WriteAllText(System.IO.Path.Combine(workingDestDirName, "log.txt"), sourceDirName + "\r\n" + filelist.Count.ToString() + " files");
+
             }
             else
             {
@@ -117,6 +145,11 @@ namespace ContentManagerV1
                 countRemainingTextBlock.Text = filelist.Count.ToString();
             }
 
+            // finished
+            string log = File.ReadAllText(System.IO.Path.Combine(workingDestDirName, "log.txt"));
+            File.WriteAllText(System.IO.Path.Combine(workingDestDirName, "log.txt"), log + " finished");
+           
+
         }
 
         private string GetXmlDirectoryInfoFileName(string dirPath)
@@ -153,6 +186,82 @@ namespace ContentManagerV1
             return dirXml;
         }
 
+        private void CopyFileIfNeedTo(string filePath, string objectStoreFileName, string hashValue)
+        {
+            if (CheckIfFileInOtherArchiveDb(hashValue))
+                return;
+
+            if (File.Exists(objectStoreFileName))
+            {
+                // should be the exact same content. Should we binary check to make sure?
+                // for now, just check filesize.
+                FileInfo existingFile = new FileInfo(objectStoreFileName);
+                FileInfo newFile = new FileInfo(filePath);
+                if (newFile.Length != existingFile.Length)
+                    throw new Exception("Collision with different length files - should be impossible?");
+            }
+            else
+            {
+                File.Copy(filePath, objectStoreFileName);
+            }
+
+        }
+
+        private void DoHashFileStuff(string filePath)
+        {
+            // it is a file
+
+            string hashValue = SH1HashUtilities.HashFile(filePath);
+
+            string subDirName = hashValue.Substring(0, 2);
+            string dirName = System.IO.Path.Combine(objectDestDirName, subDirName);
+
+            if (!Directory.Exists(dirName))
+                Directory.CreateDirectory(dirName);
+
+            string objectStoreFileName = System.IO.Path.Combine(dirName, hashValue);
+
+            CopyFileIfNeedTo(filePath, objectStoreFileName, hashValue);
+
+            string xmlFilename = objectStoreFileName + ".xml";
+            XDocument fileXml;
+            if (File.Exists(xmlFilename))
+            {
+                // get existing
+                fileXml = XDocument.Load(xmlFilename);
+            }
+            else
+            {
+                fileXml = FileXmlUtilities.GenerateEmptyFileInfoDocument();
+            }
+
+            FileXmlUtilities.AddFileInfoElement(fileXml, filePath, hashValue);
+
+            fileXml.Save(xmlFilename);
+
+            // save hash value to directoryInfo file
+            string dirPath = System.IO.Path.GetDirectoryName(filePath);
+            string filename = System.IO.Path.GetFileName(filePath);
+
+            string workingDirName = GetXmlDirectoryInfoFileName(dirPath);
+ 
+            XDocument directoryInfoXmlDoc = DoDirectoryInfoFileStuff(dirPath, workingDirName);
+
+            var trythis = directoryInfoXmlDoc.Root.Elements("File");
+
+            XElement fileElement = (from element in directoryInfoXmlDoc.Root.Elements("File")
+                                    where element.Attribute("filename").Value.ToString() == filename
+                                    select element).Single();
+
+            fileElement.SetAttributeValue("Hash", hashValue);
+
+            directoryInfoXmlDoc.Save(workingDirName);
+                    
+        }
+
+
+
+
         private Task HashCurrentFile(string filePath)
         {
 
@@ -167,64 +276,7 @@ namespace ContentManagerV1
                     }
                     else if (System.IO.File.Exists(filePath))
                     {
-                        // it is a file
-
-                        string hashValue = SH1HashUtilities.HashFile(filePath);
-
-                        string subDirName = hashValue.Substring(0, 2);
-                        string dirName = System.IO.Path.Combine(objectDestDirName, subDirName);
-
-                        if (!Directory.Exists(dirName))
-                            Directory.CreateDirectory(dirName);
-
-                        string objectStoreFileName = System.IO.Path.Combine(dirName, hashValue);
-                        if (File.Exists(objectStoreFileName))
-                        {
-                            // should be the exact same content. Should we binary check to make sure?
-                            // for now, just check filesize.
-                            FileInfo existingFile = new FileInfo(objectStoreFileName);
-                            FileInfo newFile = new FileInfo(filePath);
-                            if (newFile.Length != existingFile.Length)
-                                throw new Exception("Collision with different length files - should be impossible?");
-                        }
-                        else
-                        {
-                            File.Copy(filePath, objectStoreFileName);
-                        }
-
-                        string xmlFilename = objectStoreFileName + ".xml";
-                        XDocument fileXml;
-                        if (File.Exists(xmlFilename))
-                        {
-                            // get existing
-                            fileXml = XDocument.Load(xmlFilename);
-                        }
-                        else
-                        {
-                            fileXml = FileXmlUtilities.GenerateEmptyFileInfoDocument();
-                        }
-
-                        FileXmlUtilities.AddFileInfoElement(fileXml, filePath, hashValue);
-
-                        fileXml.Save(xmlFilename);
-
-                        // save hash value to directoryInfo file
-                        string dirPath = System.IO.Path.GetDirectoryName(filePath);
-                        string filename = System.IO.Path.GetFileName(filePath);
-
-                        string workingDirName = GetXmlDirectoryInfoFileName(dirPath);
- 
-                        XDocument directoryInfoXmlDoc = DoDirectoryInfoFileStuff(dirPath, workingDirName);
-
-                        var trythis = directoryInfoXmlDoc.Root.Elements("File");
-
-                        XElement fileElement = (from element in directoryInfoXmlDoc.Root.Elements("File")
-                                               where element.Attribute("filename").Value.ToString() == filename
-                                               select element).Single();
-
-                        fileElement.SetAttributeValue("Hash", hashValue);
-
-                        directoryInfoXmlDoc.Save(workingDirName);
+                        DoHashFileStuff(filePath);
                     }
                     else
                     {
@@ -250,6 +302,14 @@ namespace ContentManagerV1
                 serializer.Serialize(writer, state);
                 writer.Flush();
             }
+        }
+
+        private void OnOtherArchivesDbDirectoryButtonClick(object sender, RoutedEventArgs e)
+        {
+            string dirname = FilePickerUtility.PickDirectory();
+            if ((dirname != null) && (dirname != String.Empty))
+                alreadyArchivedDbDirectoryTextBlock.Text = dirname;
+
         }
     }
 }

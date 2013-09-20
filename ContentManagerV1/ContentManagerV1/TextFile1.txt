@@ -1,11 +1,28 @@
 ﻿
+
+
+- have a way to compare object store to original directory so can check if done, this complements the log.
+
+- be able to do a directory again and it does not complain
+
+- utility to copy object store files elsewhere but have dummy files in place so can still archive there. 
+
 - seperate directories for object store and directory structure. Want to be able to combine object store but have multiple directories. 
+
+- be able to hash directories so can tell if duplicate.
+Do we keep directories with other objects or separate? Seperate makes sense so can copy object store files elsewhere, or maybe just copy large files elsewhere, not all of them. Directories do not get that large so should be safe.
+
 Should be able to copy this elsewhere for compare, e.g. online.
 
 - provide means to have list of hash values so can check for duplicates when away from object store.
 
 - how to handle permissions problems?
   maybe have an "invalid hash" value, link files to that, note in Xml if permissions problem.
+
+  - give log same name as directory (hash value), so can match things up.
+
+  - handle zip files
+
 
 
 

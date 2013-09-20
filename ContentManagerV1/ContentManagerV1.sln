@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MpvUtilities", "MpvUtilitie
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtractDirectory", "ExtractDirectory\ExtractDirectory.csproj", "{EBB233CD-3FB9-464A-A960-ECC320655821}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirCompare", "DirCompare\DirCompare.csproj", "{B43551BD-5ACA-45DA-A252-72FA32E7546D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreateListOfHashedFiles", "CreateListOfHashedFiles\CreateListOfHashedFiles.csproj", "{F7C619FC-462A-4E3E-BBEB-69BB0CE341AE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,6 +35,14 @@ Global
 		{EBB233CD-3FB9-464A-A960-ECC320655821}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EBB233CD-3FB9-464A-A960-ECC320655821}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EBB233CD-3FB9-464A-A960-ECC320655821}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B43551BD-5ACA-45DA-A252-72FA32E7546D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B43551BD-5ACA-45DA-A252-72FA32E7546D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B43551BD-5ACA-45DA-A252-72FA32E7546D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B43551BD-5ACA-45DA-A252-72FA32E7546D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7C619FC-462A-4E3E-BBEB-69BB0CE341AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7C619FC-462A-4E3E-BBEB-69BB0CE341AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7C619FC-462A-4E3E-BBEB-69BB0CE341AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7C619FC-462A-4E3E-BBEB-69BB0CE341AE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
