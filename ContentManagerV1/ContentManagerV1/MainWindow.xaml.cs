@@ -207,22 +207,8 @@ namespace ContentManagerV1
 
         }
 
-        private void DoHashFileStuff(string filePath)
+        private void addLocationToXmlFile(string objectStoreFileName, string filePath, string hashValue)
         {
-            // it is a file
-
-            string hashValue = SH1HashUtilities.HashFile(filePath);
-
-            string subDirName = hashValue.Substring(0, 2);
-            string dirName = System.IO.Path.Combine(objectDestDirName, subDirName);
-
-            if (!Directory.Exists(dirName))
-                Directory.CreateDirectory(dirName);
-
-            string objectStoreFileName = System.IO.Path.Combine(dirName, hashValue);
-
-            CopyFileIfNeedTo(filePath, objectStoreFileName, hashValue);
-
             string xmlFilename = objectStoreFileName + ".xml";
             XDocument fileXml;
             if (File.Exists(xmlFilename))
@@ -238,6 +224,27 @@ namespace ContentManagerV1
             FileXmlUtilities.AddFileInfoElement(fileXml, filePath, hashValue);
 
             fileXml.Save(xmlFilename);
+        }
+
+        private void DoHashFileStuff(string filePath)
+        {
+            // it is a file
+
+            string hashValue = SH1HashUtilities.HashFile(filePath);
+
+            string subDirName = hashValue.Substring(0, 2);
+            string dirName = System.IO.Path.Combine(objectDestDirName, subDirName);
+
+            if (!Directory.Exists(dirName))
+                Directory.CreateDirectory(dirName);
+
+            string objectStoreFileName = System.IO.Path.Combine(dirName, hashValue);
+
+            // copy file to object store
+            CopyFileIfNeedTo(filePath, objectStoreFileName, hashValue);
+
+            // add location to corresponding xml file
+            addLocationToXmlFile(objectStoreFileName, filePath, hashValue);
 
             // save hash value to directoryInfo file
             string dirPath = System.IO.Path.GetDirectoryName(filePath);
