@@ -69,7 +69,7 @@ namespace ObjectStoreViewer
         {
             TreeViewItem item = (TreeViewItem)sender;
 
-            RecursivelyAddDirectoriesAndFiles(dirPath, item);
+            //RecursivelyAddDirectoriesAndFiles(dirPath, item);
 
         }
 
