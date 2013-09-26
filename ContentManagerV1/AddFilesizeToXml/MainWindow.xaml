@@ -1,0 +1,8 @@
+﻿<Window x:Class="AddFilesizeToXml.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="350" Width="525">
+    <Grid>
+        <Button HorizontalAlignment="Center" VerticalAlignment="Center" Content="Choose Repo Root Dir" Click="ChooseRepoButton_Click" />
+    </Grid>
+</Window>
