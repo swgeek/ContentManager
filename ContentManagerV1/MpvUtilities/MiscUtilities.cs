@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,5 +21,16 @@ namespace MpvUtilities
                
             return fullPath;
         }
+
+        public static string GetOrCreateDirectoryForHashName(string hashName, string rootDirectory)
+        {
+            string firstTwoCharsOfHash = hashName.Substring(0, 2);
+            string dirPath = Path.Combine(rootDirectory, firstTwoCharsOfHash);
+            if (!Directory.Exists(dirPath))
+                Directory.CreateDirectory(dirPath);
+
+            return dirPath;
+        }
+
     }
 }
