@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace AddFilesizeToXml.Properties
+namespace CopyFiles.Properties
 {
 
 

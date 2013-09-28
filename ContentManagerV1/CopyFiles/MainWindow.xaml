@@ -1,0 +1,34 @@
+﻿<Window x:Class="CopyFiles.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="350" Width="525">
+    <!-- this seems to be a common pattern in this solution, maybe abstract out into a control? -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="2*" />
+        </Grid.ColumnDefinitions>
+
+        <Button Margin="10" Click="OnSourceDirectoryButtonClick" Grid.Row="0" Grid.Column="0">Source Repository root</Button>
+        <TextBlock Margin="10" Name="sourceDirectoryTextBlock" Grid.Row="0"  Grid.Column="1" />
+
+        <Button Margin="10" Click="OnDestinationDirectoryButtonClick" Grid.Row="1" Grid.Column="0">Destination Directory root</Button>
+        <TextBlock Margin="10" Name="destinationDirectoryTextBlock"  Grid.Row="1"  Grid.Column="1" />
+
+        <Button Margin="10" Click="OnLogsDirectoryButtonClick" Grid.Row="2" Grid.Column="0">Logs Directory</Button>
+        <TextBlock Margin="10" Name="logsDirectoryTextBlock"  Grid.Row="2"  Grid.Column="1" />
+
+        <Button Name="CopyFiles" Margin="10" Grid.ColumnSpan="2" Background="GreenYellow" Content="Copy Files" Grid.Row="3" Grid.Column="0" Click="OnCopyFilesButtonClick" />
+
+        <TextBlock Margin="10" Name="statusTextBlock"  Grid.Row="4"  Grid.Column="1" />
+    </Grid>
+
+</Window>

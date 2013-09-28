@@ -52,6 +52,7 @@ namespace CreateListOfHashedFiles
             if (Directory.Exists(sourceDirName) && Directory.Exists(rootDestDirName))
             {
                 int count = 0;
+                List<string> filenameList = new List<string>();
                 string filesSubdirName = "files";
                 string objectDirName = System.IO.Path.Combine(sourceDirName, filesSubdirName);
                 if (!Directory.Exists(objectDirName))
@@ -64,7 +65,7 @@ namespace CreateListOfHashedFiles
                     currentDirectoryName = System.IO.Path.Combine(objectDirName, i.ToString("X2"));
                     if (Directory.Exists(currentDirectoryName))
                     {
-                        List<string> filenameList = new List<string>();
+
 
                         DirectoryInfo currentDirectory = new DirectoryInfo(currentDirectoryName);
 
@@ -73,8 +74,8 @@ namespace CreateListOfHashedFiles
                             if (file.Extension != ".xml")
                             {
                                 count++;
-                                statusTextBlock.Text = count.ToString() + " files found";
-                                filenameList.Add(file.Name);
+                                string fileNameAndSize = file.Name + ";;" + file.Length.ToString();
+                                filenameList.Add(fileNameAndSize);
                             }
                         }
 
@@ -86,16 +87,14 @@ namespace CreateListOfHashedFiles
                             {
                                 string[] existingFilenames = File.ReadAllLines(outputFileName);
                                 filenameList.AddRange(existingFilenames);
-
-                                
                             }
  
-                            File.WriteAllLines(outputFileName, filenameList.Distinct().ToArray());
-                            }
+                            File.WriteAllLines(outputFileName, filenameList.Distinct().ToArray());                           
+                        }
                     }
                 }
 
-                statusTextBlock.Text = count.ToString() + " files found, FINISHED";
+                statusTextBlock.Text = count.ToString() + " files found, listed at " + rootDestDirName + ", FINISHED";
             }
         }
     }
