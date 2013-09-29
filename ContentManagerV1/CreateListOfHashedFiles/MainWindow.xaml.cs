@@ -52,7 +52,6 @@ namespace CreateListOfHashedFiles
             if (Directory.Exists(sourceDirName) && Directory.Exists(rootDestDirName))
             {
                 int count = 0;
-                List<string> filenameList = new List<string>();
                 string filesSubdirName = "files";
                 string objectDirName = System.IO.Path.Combine(sourceDirName, filesSubdirName);
                 if (!Directory.Exists(objectDirName))
@@ -61,6 +60,7 @@ namespace CreateListOfHashedFiles
                 string currentDirectoryName = string.Empty;
                 for (int i = 0x00; i < 0x100; i++)
                 {
+                    List<string> filenameList = new List<string>();
 
                     currentDirectoryName = System.IO.Path.Combine(objectDirName, i.ToString("X2"));
                     if (Directory.Exists(currentDirectoryName))
