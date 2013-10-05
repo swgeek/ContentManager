@@ -24,29 +24,11 @@ namespace ObjectStoreViewer
     /// </summary>
     public partial class MainWindow : Window
     {
-        
+        string workingDir;
+
         public MainWindow()
         {
             InitializeComponent();
-        }
-
-        private void OnChooseRootDirButtonClick(object sender, RoutedEventArgs e)
-        {
-            string workingDir;
-            string dirname = FilePickerUtility.PickDirectory();
-            if ((dirname != null) && (dirname != String.Empty))
-            {
-                // for now disable the button. In real version allow user to change the root directory
-                ChooseRootDirButton.Visibility = System.Windows.Visibility.Collapsed;
-                directoryTreeView.Visibility = System.Windows.Visibility.Visible;
-
-                workingDir = System.IO.Path.Combine(dirname, "working");
-                if (Directory.Exists(workingDir))
-                {
-                    ProcessWorkingDir(workingDir);
-                }
-            }
-
         }
 
         private void ProcessWorkingDir(string workingDir)
@@ -59,23 +41,99 @@ namespace ObjectStoreViewer
                 TreeViewItem newItem = new TreeViewItem();
                 newItem.Header = dirPath;
                 directoryTreeView.Items.Add(newItem);
-                newItem.Selected += newItem_Selected;
-
-
+                newItem.Selected += rootItem_Expanded;
             }
         }
 
-        void newItem_Selected(object sender, RoutedEventArgs e)
+        private void ChooseWorkingDirButton_Click(object sender, RoutedEventArgs e)
         {
-            TreeViewItem item = (TreeViewItem)sender;
+            workingDir = FilePickerUtility.PickDirectory();
+            if ((workingDir != null) && (workingDir != String.Empty))
+            {
+                // for now disable the button. In real version allow user to change the root directory
+                ChooseWorkingDirButton.Visibility = System.Windows.Visibility.Collapsed;
+                directoryTreeView.Visibility = System.Windows.Visibility.Visible;
 
-            //RecursivelyAddDirectoriesAndFiles(dirPath, item);
-
+                foreach (string xmlFileName in Directory.GetFiles(workingDir, "*.xml"))
+                {
+                    // for now just put xml filename in list
+                    string rootDirectory = MpvUtilities.MoreXmlUtilities.GetRootDirectoryFromXmlRootFile(xmlFileName);
+                    TreeViewItem newItem = new TreeViewItem();
+                    newItem.Header = rootDirectory;
+                    newItem.Tag = rootDirectory;
+                    newItem.Expanded += rootItem_Expanded;
+                    directoryTreeView.Items.Add(newItem);
+                }
+            }
         }
 
-        private void RecursivelyAddDirectoriesAndFiles(string dirPath, TreeViewItem newItem)
+        //private void RecursivelyLoadDirectoryIntoTree(string rootPath, TreeViewItem treeRoot)
+        //{
+        //    string dirhash = MpvUtilities.SH1HashUtilities.HashString(rootPath);
+        //    string dirInfoPath = MpvUtilities.MiscUtilities.GetExistingHashFileName(workingDir, dirhash, ".xml");
+        //    XDocument dirXml = XDocument.Load(dirInfoPath);
+
+        //    foreach (XElement subdirXml in dirXml.Root.Elements("Subdirectory"))
+        //    {
+        //        string subdirName = subdirXml.Attribute("directoryName").Value.ToString();
+        //        TreeViewItem newItem = new TreeViewItem();
+        //        newItem.Header = subdirName + "\\";
+
+        //        string subdirPath = System.IO.Path.Combine(rootPath, subdirName);
+        //        RecursivelyLoadDirectoryIntoTree(subdirPath, newItem);
+        //        treeRoot.Items.Add(newItem);
+
+        //    }
+
+
+        //    foreach (XElement fileXml in dirXml.Root.Elements("File"))
+        //    {
+        //        string filename = fileXml.Attribute("filename").Value.ToString();
+        //        treeRoot.Items.Add(filename);
+        //    }
+        //}
+
+        void rootItem_Expanded(object sender, RoutedEventArgs e)
         {
-            throw new NotImplementedException();
+            e.Handled = true;
+
+            TreeViewItem senderItem = sender as TreeViewItem;
+            string dirPath = senderItem.Tag as string;
+
+            string dirhash = MpvUtilities.SH1HashUtilities.HashString(dirPath);
+            string dirInfoPath = MpvUtilities.MiscUtilities.GetExistingHashFileName(workingDir, dirhash, ".xml");
+            XDocument dirXml = XDocument.Load(dirInfoPath);
+
+            // for now, reload entries every time. Inefficient, temporary. 
+            senderItem.Items.Clear();
+
+            foreach (XElement subdirXml in dirXml.Root.Elements("Subdirectory"))
+            {
+                string subdirName = subdirXml.Attribute("directoryName").Value.ToString();
+                TreeViewItem newItem = new TreeViewItem();
+                newItem.Header = subdirName + "\\";
+
+                string subdirPath = System.IO.Path.Combine(dirPath, subdirName);
+
+                newItem.Tag = subdirPath;
+
+                newItem.Expanded += rootItem_Expanded;
+
+               // newItem.Items.Add("test");
+
+                senderItem.Items.Add(newItem);
+
+            }
+
+
+            foreach (XElement fileXml in dirXml.Root.Elements("File"))
+            {
+                string filename = fileXml.Attribute("filename").Value.ToString();
+                senderItem.Items.Add(filename);
+            }       
+        
+        
+        
         }
     }
 }

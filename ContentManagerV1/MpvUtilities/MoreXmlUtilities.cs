@@ -63,5 +63,12 @@ namespace MpvUtilities
 
             rootElement.Add(newElement);
         }
+
+        public static string GetRootDirectoryFromXmlRootFile(string xmlFileName)
+        {
+            XDocument xdoc = XDocument.Load(xmlFileName);
+            string rootDir = xdoc.Root.Attribute("path").Value.ToString();
+            return rootDir;
+        }
     }
 }
