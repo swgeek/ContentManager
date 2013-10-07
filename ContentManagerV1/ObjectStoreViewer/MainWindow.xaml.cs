@@ -1,19 +1,9 @@
 ﻿using MpvUtilities;
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Xml.Linq;
 
 
@@ -25,75 +15,52 @@ namespace ObjectStoreViewer
     public partial class MainWindow : Window
     {
         string workingDir;
+        string depotRoot;
 
         public MainWindow()
         {
             InitializeComponent();
         }
 
-        private void ProcessWorkingDir(string workingDir)
+        private void PickDepotRootDirButton_Click(object sender, RoutedEventArgs e)
         {
-            DirectoryInfo dirInfo = new DirectoryInfo(workingDir);
-            foreach (FileInfo file in dirInfo.EnumerateFiles("*.xml", SearchOption.TopDirectoryOnly))
-            {
-                XDocument dirXml = XDocument.Load(file.FullName);
-                string dirPath = dirXml.Root.Attribute("path").Value.ToString();
-                TreeViewItem newItem = new TreeViewItem();
-                newItem.Header = dirPath;
-                directoryTreeView.Items.Add(newItem);
-                newItem.Selected += rootItem_Expanded;
-            }
-        }
-
-        private void ChooseWorkingDirButton_Click(object sender, RoutedEventArgs e)
-        {
-            workingDir = FilePickerUtility.PickDirectory();
-            if ((workingDir != null) && (workingDir != String.Empty))
+            depotRoot = FilePickerUtility.PickDirectory();
+            if ((depotRoot != null) && (depotRoot != String.Empty))
             {
                 // for now disable the button. In real version allow user to change the root directory
-                ChooseWorkingDirButton.Visibility = System.Windows.Visibility.Collapsed;
+                ChooseDepot.Visibility = System.Windows.Visibility.Collapsed;
                 directoryTreeView.Visibility = System.Windows.Visibility.Visible;
+
+                workingDir = System.IO.Path.Combine(depotRoot, "working");
+                if (!Directory.Exists(workingDir))
+                    throw new Exception(workingDir + "does not exist");
 
                 foreach (string xmlFileName in Directory.GetFiles(workingDir, "*.xml"))
                 {
                     // for now just put xml filename in list
                     string rootDirectory = MpvUtilities.MoreXmlUtilities.GetRootDirectoryFromXmlRootFile(xmlFileName);
-                    TreeViewItem newItem = new TreeViewItem();
-                    newItem.Header = rootDirectory;
-                    newItem.Tag = rootDirectory;
-                    newItem.Expanded += rootItem_Expanded;
-                    directoryTreeView.Items.Add(newItem);
+                    directoryTreeView.Items.Add(CreateTreeViewItem(rootDirectory, rootDirectory));
                 }
             }
         }
 
-        //private void RecursivelyLoadDirectoryIntoTree(string rootPath, TreeViewItem treeRoot)
-        //{
-        //    string dirhash = MpvUtilities.SH1HashUtilities.HashString(rootPath);
-        //    string dirInfoPath = MpvUtilities.MiscUtilities.GetExistingHashFileName(workingDir, dirhash, ".xml");
-        //    XDocument dirXml = XDocument.Load(dirInfoPath);
+        private TreeViewItem CreateTreeViewItem(string rootDirectory, string displayName)
+        {
+            TreeViewItem newItem = new TreeViewItem();
+            newItem.Header = displayName + "\\";
+            newItem.Tag = rootDirectory;
+            newItem.Expanded += treeItem_Expanded;
+            newItem.Selected += treeItem_Selected;
+            return newItem;
+        }
 
-        //    foreach (XElement subdirXml in dirXml.Root.Elements("Subdirectory"))
-        //    {
-        //        string subdirName = subdirXml.Attribute("directoryName").Value.ToString();
-        //        TreeViewItem newItem = new TreeViewItem();
-        //        newItem.Header = subdirName + "\\";
+        void treeItem_Selected(object sender, RoutedEventArgs e)
+        {
+            currentDirectoryTextBlock.Text = (sender as TreeViewItem).Tag as string;
+            e.Handled = true;
+        }
 
-        //        string subdirPath = System.IO.Path.Combine(rootPath, subdirName);
-        //        RecursivelyLoadDirectoryIntoTree(subdirPath, newItem);
-        //        treeRoot.Items.Add(newItem);
-
-        //    }
-
-
-        //    foreach (XElement fileXml in dirXml.Root.Elements("File"))
-        //    {
-        //        string filename = fileXml.Attribute("filename").Value.ToString();
-        //        treeRoot.Items.Add(filename);
-        //    }
-        //}
-
-        void rootItem_Expanded(object sender, RoutedEventArgs e)
+        void treeItem_Expanded(object sender, RoutedEventArgs e)
         {
             e.Handled = true;
 
@@ -110,30 +77,46 @@ namespace ObjectStoreViewer
             foreach (XElement subdirXml in dirXml.Root.Elements("Subdirectory"))
             {
                 string subdirName = subdirXml.Attribute("directoryName").Value.ToString();
-                TreeViewItem newItem = new TreeViewItem();
-                newItem.Header = subdirName + "\\";
-
                 string subdirPath = System.IO.Path.Combine(dirPath, subdirName);
-
-                newItem.Tag = subdirPath;
-
-                newItem.Expanded += rootItem_Expanded;
-
-               // newItem.Items.Add("test");
-
-                senderItem.Items.Add(newItem);
-
+                senderItem.Items.Add(CreateTreeViewItem(subdirPath, subdirName));
             }
-
 
             foreach (XElement fileXml in dirXml.Root.Elements("File"))
             {
                 string filename = fileXml.Attribute("filename").Value.ToString();
                 senderItem.Items.Add(filename);
-            }       
-        
-        
-        
+            }           
+        }
+
+        private void ChooseDestinationDirectory_Click(object sender, RoutedEventArgs e)
+        {
+            string dirname = FilePickerUtility.PickDirectory();
+            if ((dirname != null) && (dirname != String.Empty))
+                destinationDirectoryTextBlock.Text = dirname;
+
+        }
+
+        private void ExtractCurrentDirectoryButton_Click(object sender, RoutedEventArgs e)
+        {
+            string destinationDirectory = destinationDirectoryTextBlock.Text;
+            if (destinationDirectory == String.Empty)
+                return;
+
+            if (!Directory.Exists(destinationDirectory))
+                throw new Exception(destinationDirectory + " does not exist!");
+
+            string dirPath = currentDirectoryTextBlock.Text;
+            if (dirPath == string.Empty)
+                return;
+
+            string directoryName = System.IO.Path.GetFileName(dirPath);
+            destinationDirectory = System.IO.Path.Combine(destinationDirectory, directoryName);
+
+            MpvUtilities.ExtractFromDepot.RecursivelyRestoreFiles(depotRoot, dirPath, destinationDirectory);
+
+            currentDirectoryTextBlock.Text = "Finished";
+
+            Process.Start(destinationDirectory);
         }
     }
 }

@@ -3,9 +3,29 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="MainWindow" Height="350" Width="525">
     <Grid>
-        
-        <Button Name="ChooseWorkingDirButton" Margin="10" Background="LightBlue" Content="Choose Working Dir" Click="ChooseWorkingDirButton_Click"  VerticalAlignment="Center" HorizontalAlignment="Center" />
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Button Name="ChooseDepot" Margin="10" Background="LightBlue" Content="Set Depot Root Dir" 
+                Click="PickDepotRootDirButton_Click"  VerticalAlignment="Center" HorizontalAlignment="Center" />
         <TreeView Name="directoryTreeView" Visibility="Collapsed"  />
 
+
+        <StackPanel Orientation="Vertical" Grid.Row="1">
+            
+            <StackPanel Orientation="Horizontal" >
+                <Button Content="Choose Destination Directory" Margin="5" Click="ChooseDestinationDirectory_Click"/>
+                <TextBlock Name="destinationDirectoryTextBlock" Margin="5" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" >
+                <Button Content="Extract Current Directory" Margin="5" Click="ExtractCurrentDirectoryButton_Click"/>
+                <TextBlock Name="currentDirectoryTextBlock" Margin="5" />
+            </StackPanel>
+
+        </StackPanel>
     </Grid>
 </Window>

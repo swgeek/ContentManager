@@ -48,7 +48,7 @@ namespace ExtractDirectory
             if (sourceBaseDir == String.Empty || destBaseDir == String.Empty)
                 return;
 
-            ExtractEverything.ExtractFilesAndDirs(sourceBaseDir, destBaseDir);
+            ExtractFromDepot.ExtractFilesAndDirs(sourceBaseDir, destBaseDir);
         }
     }
 }

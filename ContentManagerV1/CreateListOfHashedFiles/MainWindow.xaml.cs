@@ -62,8 +62,6 @@ namespace CreateListOfHashedFiles
                 {
                     List<string> filenameList = new List<string>();
 
-                    List<string> filenameList = new List<string>();
-
                     currentDirectoryName = System.IO.Path.Combine(objectDirName, i.ToString("X2"));
                     if (Directory.Exists(currentDirectoryName))
                     {

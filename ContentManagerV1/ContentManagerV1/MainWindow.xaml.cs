@@ -266,9 +266,6 @@ namespace ContentManagerV1
                     
         }
 
-
-
-
         private Task HashCurrentFile(string filePath)
         {
 
