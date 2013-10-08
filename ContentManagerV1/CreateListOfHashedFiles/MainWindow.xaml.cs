@@ -43,8 +43,10 @@ namespace CreateListOfHashedFiles
 
         private void OnGetFilesButtonClick(object sender, RoutedEventArgs e)
         {
+
             string sourceDirName = sourceDirectoryTextBlock.Text;
             string rootDestDirName = destinationDirectoryTextBlock.Text;
+            string depotName = System.IO.Path.GetFileName(sourceDirName);
 
             if (sourceDirName == String.Empty || rootDestDirName == String.Empty)
                 return;
@@ -72,7 +74,8 @@ namespace CreateListOfHashedFiles
                             if (file.Extension != ".xml")
                             {
                                 count++;
-                                string fileNameAndSize = file.Name + ";;" + file.Length.ToString();
+                                //string fileNameAndSize = file.Name; // just file name for old version files
+                                string fileNameAndSize = file.Name + ";;" + file.Length.ToString() + ";;" + depotName;
                                 filenameList.Add(fileNameAndSize);
                             }
                         }
