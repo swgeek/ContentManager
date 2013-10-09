@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ContentManagerV1
+namespace MpvUtilities
 {
-    class FileList
+    public class FileList
     {
         public List<string> fileList {get; set;}
 
@@ -57,3 +57,4 @@ namespace ContentManagerV1
 
     }
 }
+

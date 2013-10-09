@@ -16,6 +16,7 @@ namespace ObjectStoreViewer
     {
         string workingDir;
         string depotRoot;
+        string depotName;
 
         public MainWindow()
         {
@@ -27,6 +28,9 @@ namespace ObjectStoreViewer
             depotRoot = FilePickerUtility.PickDirectory();
             if ((depotRoot != null) && (depotRoot != String.Empty))
             {
+                // depot name is name of directory, have to make those unique.
+                depotName = System.IO.Path.GetFileName(depotRoot);
+
                 // for now disable the button. In real version allow user to change the root directory
                 ChooseDepot.Visibility = System.Windows.Visibility.Collapsed;
                 directoryTreeView.Visibility = System.Windows.Visibility.Visible;

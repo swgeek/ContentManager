@@ -53,10 +53,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="CurrentState.cs" />
-    <Compile Include="FileList.cs" />
-    <Compile Include="FileXmlUtilities.cs" />
-    <Compile Include="TraverseDir.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

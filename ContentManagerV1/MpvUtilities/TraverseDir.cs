@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ContentManagerV1
+namespace MpvUtilities
 {
-    class TraverseDir
+    public class TraverseDir
     {
         //private FileList mFileList;
 

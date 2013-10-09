@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ContentManagerV1
+namespace MpvUtilities
 {
     public class CurrentState
     {
@@ -14,3 +14,4 @@ namespace ContentManagerV1
         public string[] list;
     }
 }
+

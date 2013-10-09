@@ -6,9 +6,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace ContentManagerV1
+namespace MpvUtilities
+
 {
-    class FileXmlUtilities
+    public class FileXmlUtilities
     {
         static public XDocument GenerateEmptyFileInfoDocument()
         {
@@ -17,8 +18,6 @@ namespace ContentManagerV1
             XDocument doc = new XDocument(declaration, rootElement);
             return doc;
         }
-
-
 
         static public void AddFileInfoElement(XDocument xmlDoc, string file, string hashValue)
         {

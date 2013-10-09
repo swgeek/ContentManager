@@ -41,12 +41,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CurrentState.cs" />
+    <Compile Include="DepotPathUtilities.cs" />
     <Compile Include="ExtractFromDepot.cs" />
+    <Compile Include="FileList.cs" />
     <Compile Include="FilePickerUtility.cs" />
+    <Compile Include="FileXmlUtilities.cs" />
+    <Compile Include="HashToDepot.cs" />
     <Compile Include="MiscUtilities.cs" />
     <Compile Include="MoreXmlUtilities.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SHA1HashUtilities.cs" />
+    <Compile Include="TraverseDir.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
