@@ -13,11 +13,7 @@ namespace ContentManagerV1
     /// </summary>
     public partial class MainWindow : Window
     {
-        //private string sourceDirName = String.Empty;
-        //private string depotRootPath = String.Empty;
-        //private string otherArchiveDbDirName = String.Empty;
         HashToDepot hasher;
-
         bool stopProcessing = false;
 
         public MainWindow()
@@ -96,13 +92,6 @@ namespace ContentManagerV1
             // finished
             hasher.LogFinished();
         }
-
-
-
-
-
-
-
  
         private void OnSaveStateAndExitButtonPress(object sender, RoutedEventArgs e)
         {
@@ -114,7 +103,6 @@ namespace ContentManagerV1
             string dirname = FilePickerUtility.PickDirectory();
             if ((dirname != null) && (dirname != String.Empty))
                 alreadyArchivedDbDirectoryTextBlock.Text = dirname;
-
         }
     }
 }
