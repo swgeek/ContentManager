@@ -4,13 +4,16 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MpvUtilities;
+using System.Xml.Linq;
 
 namespace ContentManagerCore
 {
 
+    // gets a list of all files in the depot
     public class DepotFileLister
     {
-        public static int ListFiles(string depotRootPath, string filelistDbRootPath)
+        public static int ListAllFilesInDepot(string depotRootPath, string filelistDbRootPath)
         {
             string depotName = System.IO.Path.GetFileName(depotRootPath);
         
@@ -56,6 +59,53 @@ namespace ContentManagerCore
                 }
             }
             return count;
+        }
+
+        public static DirListing GetDirListing(string originalPath, string depotRootPath)
+        {
+            string dirhash = MpvUtilities.SH1HashUtilities.HashString(originalPath);
+
+            string workingDir = MpvUtilities.DepotPathUtilities.GetWorkingDirPath(depotRootPath);
+            if (!Directory.Exists(workingDir))
+                throw new Exception(workingDir + "does not exist");
+
+            string dirInfoPath = MpvUtilities.MiscUtilities.GetExistingHashFileName(depotRootPath, dirhash, ".xml");
+            XDocument dirXml = XDocument.Load(dirInfoPath);
+
+            DirListing listing = new DirListing(originalPath);
+
+            foreach (XElement subdirXml in dirXml.Root.Elements("Subdirectory"))
+            {
+                string subdirName = subdirXml.Attribute("directoryName").Value.ToString();
+                string subdirPath = System.IO.Path.Combine(originalPath, subdirName);
+                listing.Directories.Add(subdirName);
+            }
+
+            foreach (XElement fileXml in dirXml.Root.Elements("File"))
+            {
+                string filename = fileXml.Attribute("filename").Value.ToString();
+                listing.Files.Add(filename);
+            }
+
+            return listing;
+        }
+
+        public static List<string> GetRootDirectoriesInDepot(string depotRootPath)
+        {
+            string workingDir = MpvUtilities.DepotPathUtilities.GetWorkingDirPath(depotRootPath);
+            if (!Directory.Exists(workingDir))
+                throw new Exception(workingDir + "does not exist");
+
+            List<String> dirListing = new List<string>();
+
+            foreach (string xmlFileName in Directory.GetFiles(workingDir, "*.xml"))
+            {
+                // for now just put xml filename in list
+                string rootDirectory = MpvUtilities.MoreXmlUtilities.GetRootDirectoryFromXmlRootFile(xmlFileName);
+                dirListing.Add(rootDirectory);
+            }
+
+            return dirListing;
         }
     }
 }

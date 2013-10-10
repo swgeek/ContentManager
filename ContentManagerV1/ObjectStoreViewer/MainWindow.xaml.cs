@@ -1,10 +1,10 @@
-﻿using MpvUtilities;
+﻿using ContentManagerCore;
+using MpvUtilities;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Xml.Linq;
 
 
 namespace ObjectStoreViewer
@@ -14,7 +14,6 @@ namespace ObjectStoreViewer
     /// </summary>
     public partial class MainWindow : Window
     {
-        string workingDir;
         string depotRoot;
         string depotName;
 
@@ -35,15 +34,9 @@ namespace ObjectStoreViewer
                 ChooseDepot.Visibility = System.Windows.Visibility.Collapsed;
                 directoryTreeView.Visibility = System.Windows.Visibility.Visible;
 
-                workingDir = System.IO.Path.Combine(depotRoot, "working");
-                if (!Directory.Exists(workingDir))
-                    throw new Exception(workingDir + "does not exist");
-
-                foreach (string xmlFileName in Directory.GetFiles(workingDir, "*.xml"))
+                foreach (string dirName in ContentManagerCore.DepotFileLister.GetRootDirectoriesInDepot(depotRoot))
                 {
-                    // for now just put xml filename in list
-                    string rootDirectory = MpvUtilities.MoreXmlUtilities.GetRootDirectoryFromXmlRootFile(xmlFileName);
-                    directoryTreeView.Items.Add(CreateTreeViewItem(rootDirectory, rootDirectory));
+                    directoryTreeView.Items.Add(CreateTreeViewItem(dirName, dirName));
                 }
             }
         }
@@ -67,27 +60,22 @@ namespace ObjectStoreViewer
         void treeItem_Expanded(object sender, RoutedEventArgs e)
         {
             e.Handled = true;
-
             TreeViewItem senderItem = sender as TreeViewItem;
             string dirPath = senderItem.Tag as string;
 
-            string dirhash = MpvUtilities.SH1HashUtilities.HashString(dirPath);
-            string dirInfoPath = MpvUtilities.MiscUtilities.GetExistingHashFileName(workingDir, dirhash, ".xml");
-            XDocument dirXml = XDocument.Load(dirInfoPath);
+            DirListing listing = ContentManagerCore.DepotFileLister.GetDirListing(dirPath, depotRoot);
 
             // for now, reload entries every time. Inefficient, temporary. 
             senderItem.Items.Clear();
 
-            foreach (XElement subdirXml in dirXml.Root.Elements("Subdirectory"))
+            foreach (string directory in listing.Directories)
             {
-                string subdirName = subdirXml.Attribute("directoryName").Value.ToString();
-                string subdirPath = System.IO.Path.Combine(dirPath, subdirName);
-                senderItem.Items.Add(CreateTreeViewItem(subdirPath, subdirName));
+                string subdirPath = System.IO.Path.Combine(dirPath, directory);
+                senderItem.Items.Add(CreateTreeViewItem(subdirPath, directory));
             }
 
-            foreach (XElement fileXml in dirXml.Root.Elements("File"))
+            foreach (string filename in listing.Files)
             {
-                string filename = fileXml.Attribute("filename").Value.ToString();
                 senderItem.Items.Add(filename);
             }           
         }

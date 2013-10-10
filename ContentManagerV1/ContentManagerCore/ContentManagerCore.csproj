@@ -40,7 +40,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DepotFileLister.cs" />
+    <Compile Include="DirListing.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MpvUtilities\MpvUtilities.csproj">
+      <Project>{92d45275-0e7e-4ffe-bed5-919ec987315d}</Project>
+      <Name>MpvUtilities</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
