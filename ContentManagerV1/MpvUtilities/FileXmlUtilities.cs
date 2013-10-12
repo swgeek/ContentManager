@@ -11,15 +11,18 @@ namespace MpvUtilities
 {
     public class FileXmlUtilities
     {
-        static public XDocument GenerateEmptyFileInfoDocument()
+        static public XDocument GenerateEmptyFileInfoDocument(long filesize)
         {
             XElement rootElement = new XElement("FileInfo");
+            rootElement.Add(new XAttribute("Filesize", filesize.ToString()));
+            rootElement.Add(new XAttribute("Status", "todo"));
+
             XDeclaration declaration = new XDeclaration("1.0", "utf-8", "yes");
             XDocument doc = new XDocument(declaration, rootElement);
             return doc;
         }
 
-        static public void AddFileInfoElement(XDocument xmlDoc, string file, string hashValue)
+        static public void AddFileInfoElement(XDocument xmlDoc, string file)
         {
             XElement rootElement = xmlDoc.Root;
 
@@ -27,7 +30,6 @@ namespace MpvUtilities
 
             XElement newElement = new XElement("NodeInfo");
             newElement.Add(new XAttribute("Fullpath", file));
-            newElement.Add(new XAttribute("Hash", hashValue));
 
             foreach (XElement element in rootElement.Elements())
             {

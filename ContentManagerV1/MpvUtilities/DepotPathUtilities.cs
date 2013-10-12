@@ -24,9 +24,7 @@ namespace MpvUtilities
 
         static public string GetHashFilePath(string depotRootPath, string hashValue)
         {
-
-            string subDirName = hashValue.Substring(0, 2);
-            string dirName = System.IO.Path.Combine(GetObjectStoreDirNamePath(depotRootPath) , subDirName);
+            string dirName = GetHashFileParentDirectoryPath(depotRootPath, hashValue);
 
             if (!Directory.Exists(dirName))
                 Directory.CreateDirectory(dirName);
@@ -47,8 +45,16 @@ namespace MpvUtilities
             return System.IO.Path.Combine(dirName, hashValue + ".xml");
         }
 
+        public static string GetObjectFileXmlPath(string depotRoot, string hashFileName)
+        {
+            string dirPath = GetHashFileParentDirectoryPath(depotRoot, hashFileName);
+            return System.IO.Path.Combine(dirPath, hashFileName + ".xml");
+        }
 
-
-
+        static public string GetHashFileParentDirectoryPath(string depotRootPath, string hashValue)
+        {
+            string subDirName = hashValue.Substring(0, 2);
+            return System.IO.Path.Combine(GetObjectStoreDirNamePath(depotRootPath), subDirName);
+        }
     }
 }

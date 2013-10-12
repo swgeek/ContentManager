@@ -61,6 +61,36 @@ namespace ContentManagerCore
             return count;
         }
 
+        public static string[] GetListOfAllHashedFilesInDepot(string depotRootPath)
+        {
+            string depotName = System.IO.Path.GetFileName(depotRootPath);
+            List<string> filelist = new List<string>();
+            string objectDirName = MpvUtilities.DepotPathUtilities.GetObjectStoreDirNamePath(depotRootPath);
+
+            if (!Directory.Exists(objectDirName))
+                throw new Exception(objectDirName + " does not exist - did you give correct root of archive directory?");
+
+            string currentDirectoryName = string.Empty;
+            for (int i = 0x00; i < 0x100; i++)
+            {
+                currentDirectoryName = System.IO.Path.Combine(objectDirName, i.ToString("X2"));
+                if (Directory.Exists(currentDirectoryName))
+                {
+                    DirectoryInfo currentDirectory = new DirectoryInfo(currentDirectoryName);
+
+                    foreach (FileInfo file in currentDirectory.GetFiles())
+                    {
+                        if (file.Extension != ".xml")
+                        {
+                            filelist.Add(file.Name);
+                        }
+                    }
+                }
+            }
+            return filelist.ToArray();
+        }
+
+
         public static DirListing GetDirListing(string originalPath, string depotRootPath)
         {
             string dirhash = MpvUtilities.SH1HashUtilities.HashString(originalPath);
@@ -106,6 +136,28 @@ namespace ContentManagerCore
             }
 
             return dirListing;
+        }
+
+        public static long GetFileSize(string depotRoot, string hashedFilename)
+        {
+            string filePath = MpvUtilities.DepotPathUtilities.GetHashFilePath(depotRoot, hashedFilename);
+            if (! File.Exists(filePath))
+                throw new Exception(filePath + "does not exist");
+
+            FileInfo fileInfo = new FileInfo(filePath);
+            return fileInfo.Length;           
+        }
+
+        public static XDocument GetXml(string depotRoot, string hashedFilename)
+        {
+            string xmlFilePath = MpvUtilities.DepotPathUtilities.GetObjectFileXmlPath(depotRoot, hashedFilename);
+            return XDocument.Load(xmlFilePath);
+        }
+
+        public static void UpdateXml(string depotRoot, string hashedFilename, XDocument fileXml)
+        {
+            string xmlFilePath = MpvUtilities.DepotPathUtilities.GetObjectFileXmlPath(depotRoot, hashedFilename);
+            fileXml.Save(xmlFilePath);
         }
     }
 }

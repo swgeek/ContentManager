@@ -98,8 +98,10 @@ namespace MpvUtilities
             // copy file to object store
             CopyFileIfNeedTo(filePath, objectStoreFileName, hashValue);
 
+            FileInfo fileInfo = new FileInfo(filePath);
+
             // add location to corresponding xml file
-            addLocationToXmlFile(objectStoreFileName, filePath, hashValue);
+            addLocationToXmlFile(objectStoreFileName, filePath, fileInfo.Length);
 
             // save hash value to directoryInfo file
             string dirPath = System.IO.Path.GetDirectoryName(filePath);
@@ -142,7 +144,7 @@ namespace MpvUtilities
 
         }
 
-        private void addLocationToXmlFile(string objectStoreFileName, string filePath, string hashValue)
+        private void addLocationToXmlFile(string objectStoreFileName, string filePath, long filesize)
         {
             string xmlFilename = objectStoreFileName + ".xml";
             XDocument fileXml;
@@ -153,10 +155,10 @@ namespace MpvUtilities
             }
             else
             {
-                fileXml = FileXmlUtilities.GenerateEmptyFileInfoDocument();
+                fileXml = FileXmlUtilities.GenerateEmptyFileInfoDocument(filesize);
             }
 
-            FileXmlUtilities.AddFileInfoElement(fileXml, filePath, hashValue);
+            FileXmlUtilities.AddFileInfoElement(fileXml, filePath);
 
             fileXml.Save(xmlFilename);
         }
