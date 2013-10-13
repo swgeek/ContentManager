@@ -8,7 +8,7 @@ namespace ContentManagerCore
 {
     // holds a list of all files in object store. 
     // Will probably switch to dictionary (internally) so can find files using hash name, will see.
-    // eventually should just use a real database.
+    // eventually should just use a real database, probably sqllite
     public class FileNodeList
     {
         // do not make this public as will change implementation later

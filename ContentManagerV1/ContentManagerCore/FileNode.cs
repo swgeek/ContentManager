@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 
 namespace ContentManagerCore
 {
-    // used when building up a directory tree, files are always a leaf.
-    // may combine with directoryNode so have single node, but for now...
+    // maybe get rid of this, use objectfileinfo instead
     public class FileNode
     {
         public string DepotName { get; private set; }
@@ -18,11 +17,6 @@ namespace ContentManagerCore
         {
             DepotName = depotName;
             HashValue = hashValue;
-        }
-
-        public void AddOriginalPath(string path)
-        {
-            OriginalPaths.Add(path);
         }
     }
 }

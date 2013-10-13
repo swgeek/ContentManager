@@ -90,7 +90,6 @@ namespace ContentManagerCore
             return filelist.ToArray();
         }
 
-
         public static DirListing GetDirListing(string originalPath, string depotRootPath)
         {
             string dirhash = MpvUtilities.SH1HashUtilities.HashString(originalPath);

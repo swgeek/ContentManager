@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContentManagerCore", "Conte
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AddFilesizeToXml", "AddFilesizeToXml\AddFilesizeToXml.csproj", "{68E2038D-380C-44BF-BCE7-C0BAC9AD75F6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObjectFileListWithSearch", "ObjectFileListWithSearch\ObjectFileListWithSearch.csproj", "{2043896C-A5F4-4512-8627-737081312C69}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,10 @@ Global
 		{68E2038D-380C-44BF-BCE7-C0BAC9AD75F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{68E2038D-380C-44BF-BCE7-C0BAC9AD75F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{68E2038D-380C-44BF-BCE7-C0BAC9AD75F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2043896C-A5F4-4512-8627-737081312C69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2043896C-A5F4-4512-8627-737081312C69}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2043896C-A5F4-4512-8627-737081312C69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2043896C-A5F4-4512-8627-737081312C69}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

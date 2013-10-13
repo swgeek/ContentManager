@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 namespace ContentManagerCore
 {
+    // NOT FINISHED, OR EVEN CLOSE
+    // This is just "idea" code right now
 
     // some overlap between this and DepotFileLister - maybe combine the two.
 
