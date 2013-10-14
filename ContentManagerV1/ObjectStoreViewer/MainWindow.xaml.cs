@@ -104,7 +104,7 @@ namespace ObjectStoreViewer
             string directoryName = System.IO.Path.GetFileName(dirPath);
             destinationDirectory = System.IO.Path.Combine(destinationDirectory, directoryName);
 
-            MpvUtilities.ExtractFromDepot.RecursivelyRestoreFiles(depotRoot, dirPath, destinationDirectory);
+            ExtractFromDepot.RecursivelyRestoreFiles(depotRoot, dirPath, destinationDirectory);
 
             currentDirectoryTextBlock.Text = "Finished";
 

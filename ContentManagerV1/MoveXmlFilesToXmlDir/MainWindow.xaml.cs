@@ -1,20 +1,12 @@
-﻿using MpvUtilities;
+﻿using ContentManagerCore;
+using MpvUtilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Xml.Linq;
+
 
 namespace MoveXmlFilesToXmlDir
 {
@@ -69,7 +61,7 @@ namespace MoveXmlFilesToXmlDir
         {
             foreach (string filename in filesizeList.Keys)
             {
-                string xmlFilePath = System.IO.Path.Combine(MpvUtilities.MiscUtilities.GetOrCreateDirectoryForHashName(filename, rootDestDirName), 
+                string xmlFilePath = System.IO.Path.Combine(MiscUtilities.GetOrCreateDirectoryForHashName(filename, rootDestDirName), 
                                                              filename + ".xml");
 
                 XDocument xmlDoc = XDocument.Load(xmlFilePath);
@@ -77,7 +69,7 @@ namespace MoveXmlFilesToXmlDir
                 XElement newElement = new XElement("FileInfo");
                 newElement.Add(new XAttribute("length", filesizeList[filename]));
 
-                MpvUtilities.MoreXmlUtilities.AddElementToXml(xmlDoc.Root, newElement);
+                CMXmlUtilities.AddElementToXml(xmlDoc.Root, newElement);
 
                 xmlDoc.Save(xmlFilePath);
             }
@@ -88,11 +80,11 @@ namespace MoveXmlFilesToXmlDir
             foreach (string fullPathName in xmlFileList)
             {
                 string filename = System.IO.Path.GetFileName(fullPathName);      
-                string destinationDir = MpvUtilities.MiscUtilities.GetOrCreateDirectoryForHashName(filename, rootDestDirName);
+                string destinationDir = MiscUtilities.GetOrCreateDirectoryForHashName(filename, rootDestDirName);
                 string destinationPath = System.IO.Path.Combine(destinationDir, filename);
                 if (File.Exists(destinationPath))
                 {
-                    MpvUtilities.MoreXmlUtilities.MergeXmlFiles(fullPathName, destinationPath);
+                    CMXmlUtilities.MergeXmlFiles(fullPathName, destinationPath);
                 }
                 else
                 {

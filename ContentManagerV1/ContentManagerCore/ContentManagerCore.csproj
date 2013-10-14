@@ -39,12 +39,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CMXmlUtilities.cs" />
     <Compile Include="DepotDirectoryTree.cs" />
     <Compile Include="DepotFileLister.cs" />
     <Compile Include="DirectoryNode.cs" />
     <Compile Include="DirListing.cs" />
+    <Compile Include="ExtractToDepot.cs" />
     <Compile Include="FileNode.cs" />
     <Compile Include="FileNodeList.cs" />
+    <Compile Include="HashToDepot.cs" />
+    <Compile Include="MiscUtilities.cs" />
     <Compile Include="ObjectFileInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TempMiscUtilities.cs" />

@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Security.Cryptography;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace MpvUtilities
 {
@@ -40,7 +37,6 @@ namespace MpvUtilities
 
             long filesize = file.Length;
 
-
             SHA1Managed hasher = new SHA1Managed();
             Stream fileStream;
             try
@@ -62,9 +58,6 @@ namespace MpvUtilities
 
         static public string CombineHashValues(string hash1, string hash2)
         {
-            //if ((hash1 == Constants.InvalidHash) || (hash2 == Constants.InvalidHash))
-            //    return Constants.InvalidHash;
-
             if (hash1.Length != hash2.Length)
                 throw new Exception();
 

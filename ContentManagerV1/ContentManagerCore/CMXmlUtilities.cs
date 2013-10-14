@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace MpvUtilities
-
+namespace ContentManagerCore
 {
-    public class FileXmlUtilities
+    // xml utility method. Content Manager specific.
+    public class CMXmlUtilities
     {
         static public XDocument GenerateEmptyFileInfoDocument(long filesize)
         {
@@ -85,51 +81,60 @@ namespace MpvUtilities
             return doc;
         }
 
+        public static void MergeXmlFiles(string sourceXmlFile, string destinationXmlFile)
+        {
+            XDocument destXml;
+            XDocument sourceXml;
 
+            if (File.Exists(destinationXmlFile))
+            {
+                // get existing
+                destXml = XDocument.Load(destinationXmlFile);
+            }
+            else
+            {
+                throw new Exception(destinationXmlFile + "does not exist!");
+            }
 
+            if (File.Exists(sourceXmlFile))
+            {
+                // get existing
+                sourceXml = XDocument.Load(sourceXmlFile);
+            }
+            else
+            {
+                throw new Exception(sourceXmlFile + "does not exist!");
+            }
 
-        //static public void AddDirToDirInfo(XDocument xmlDoc, string subDirPath, string hashValue)
-        //{
-        //    XElement rootElement = xmlDoc.Root;
+            // merge the two
+            foreach (XElement elementToAdd in sourceXml.Root.Elements())
+            {
+                AddElementToXml(destXml.Root, elementToAdd);
+            }
 
-        //    // first check if matching element already exists, only add if not.
+            // maybe change so save only if xml changes
+            destXml.Save(destinationXmlFile);
 
-        //    string dirName = System.IO.Path.GetDirectoryName(subDirPath);
-        //    XElement newElement = new XElement("Subdirectory");
-        //    newElement.Add(new XAttribute("directoryName", dirName));
-        //    newElement.Add(new XAttribute("Hash", hashValue));
+        }
 
-        //    foreach (XElement element in rootElement.Elements())
-        //    {
-        //        if (XNode.DeepEquals(element, newElement))
-        //        {
-        //            return;
-        //        }
-        //    }
+        public static void AddElementToXml(XElement rootElement, XElement newElement)
+        {
+            foreach (XElement element in rootElement.Elements())
+            {
+                if (XNode.DeepEquals(element, newElement))
+                {
+                    return;
+                }
+            }
 
-        //    rootElement.Add(newElement);
-        //}
+            rootElement.Add(newElement);
+        }
 
-        //static public void AddFileToDirInfo(XDocument xmlDoc, string filePath, string hashValue)
-        //{
-        //    XElement rootElement = xmlDoc.Root;
-
-        //    // first check if matching element already exists, only add if not.
-
-        //    string filename = System.IO.Path.GetFileName(filePath);
-        //    XElement newElement = new XElement("File");
-        //    newElement.Add(new XAttribute("filename", filename));
-        //    newElement.Add(new XAttribute("Hash", hashValue));
-
-        //    foreach (XElement element in rootElement.Elements())
-        //    {
-        //        if (XNode.DeepEquals(element, newElement))
-        //        {
-        //            return;
-        //        }
-        //    }
-
-        //    rootElement.Add(newElement);
-        //}
+        public static string GetRootDirectoryFromXmlRootFile(string xmlFileName)
+        {
+            XDocument xdoc = XDocument.Load(xmlFileName);
+            string rootDir = xdoc.Root.Attribute("path").Value.ToString();
+            return rootDir;
+        }
     }
 }

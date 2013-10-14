@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using MpvUtilities;
+using System;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace MpvUtilities
+namespace ContentManagerCore
 {
     public class MiscUtilities
     {
@@ -64,7 +62,7 @@ namespace MpvUtilities
             if (!Directory.Exists(workingDestDirName))
                 Directory.CreateDirectory(workingDestDirName);
 
-            XDocument rootDirXmlDoc = FileXmlUtilities.GenerateRootDirInfoDocument(sourceDirName);
+            XDocument rootDirXmlDoc = CMXmlUtilities.GenerateRootDirInfoDocument(sourceDirName);
             string hashValue = SH1HashUtilities.HashString(sourceDirName);
             string rootDirXmlPath = System.IO.Path.Combine(workingDestDirName, hashValue + ".xml");
             rootDirXmlDoc.Save(rootDirXmlPath);

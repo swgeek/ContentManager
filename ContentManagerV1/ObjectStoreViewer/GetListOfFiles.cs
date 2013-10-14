@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ContentManagerCore;
+using System;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -26,7 +27,7 @@ namespace ObjectStoreViewer
 
             string hashValue = MpvUtilities.SH1HashUtilities.HashString(originalDirPath);
 
-            string dirXmlPath = MpvUtilities.MiscUtilities.GetExistingHashFileName(Path.Combine(archiveBaseDir, "working"), hashValue, ".xml");
+            string dirXmlPath = MiscUtilities.GetExistingHashFileName(Path.Combine(archiveBaseDir, "working"), hashValue, ".xml");
 
             XDocument dirXmlDoc = XDocument.Load(dirXmlPath);
 
@@ -36,7 +37,7 @@ namespace ObjectStoreViewer
             {
                 string fileHash = element.Attribute("Hash").Value.ToString();
                 string fileName = element.Attribute("filename").Value.ToString();
-                string filePath = MpvUtilities.MiscUtilities.GetExistingHashFileName(Path.Combine(archiveBaseDir, "Files"), fileHash, String.Empty);
+                string filePath = MiscUtilities.GetExistingHashFileName(Path.Combine(archiveBaseDir, "Files"), fileHash, String.Empty);
                 string newFilePath = Path.Combine(newDirPath, fileName);
                 File.Copy(filePath, newFilePath);
             }

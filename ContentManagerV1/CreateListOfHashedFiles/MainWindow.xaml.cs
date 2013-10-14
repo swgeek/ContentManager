@@ -1,11 +1,8 @@
-﻿using MpvUtilities;
+﻿using ContentManagerCore;
+using MpvUtilities;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Windows;
-using System.Windows.Documents;
-using ContentManagerCore;
 
 namespace CreateListOfHashedFiles
 {

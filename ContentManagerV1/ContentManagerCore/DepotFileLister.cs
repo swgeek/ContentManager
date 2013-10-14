@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MpvUtilities;
 using System.Xml.Linq;
 
 namespace ContentManagerCore
@@ -98,7 +95,7 @@ namespace ContentManagerCore
             if (!Directory.Exists(workingDir))
                 throw new Exception(workingDir + "does not exist");
 
-            string dirInfoPath = MpvUtilities.MiscUtilities.GetExistingHashFileName(depotRootPath, dirhash, ".xml");
+            string dirInfoPath = MiscUtilities.GetExistingHashFileName(depotRootPath, dirhash, ".xml");
             XDocument dirXml = XDocument.Load(dirInfoPath);
 
             DirListing listing = new DirListing(originalPath);
@@ -130,7 +127,7 @@ namespace ContentManagerCore
             foreach (string xmlFileName in Directory.GetFiles(workingDir, "*.xml"))
             {
                 // for now just put xml filename in list
-                string rootDirectory = MpvUtilities.MoreXmlUtilities.GetRootDirectoryFromXmlRootFile(xmlFileName);
+                string rootDirectory = CMXmlUtilities.GetRootDirectoryFromXmlRootFile(xmlFileName);
                 dirListing.Add(rootDirectory);
             }
 

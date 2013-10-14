@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using MpvUtilities;
+using System;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace MpvUtilities
+namespace ContentManagerCore
 {
     public class HashToDepot
     {
@@ -79,7 +78,7 @@ namespace MpvUtilities
             }
             else
             {
-                dirXml = FileXmlUtilities.GenerateDirInfoDocument(dirPath);
+                dirXml = CMXmlUtilities.GenerateDirInfoDocument(dirPath);
                 dirXml.Save(workingDirName);
             }
 
@@ -125,7 +124,7 @@ namespace MpvUtilities
 
         public void CopyFileIfNeedTo(string filePath, string objectStoreFileName, string hashValue)
         {
-            if (MpvUtilities.MiscUtilities.CheckIfFileInOtherArchiveDb(hashValue, alreadyArchivedDbPath))
+            if (MiscUtilities.CheckIfFileInOtherArchiveDb(hashValue, alreadyArchivedDbPath))
                 return;
 
             if (File.Exists(objectStoreFileName))
@@ -155,10 +154,10 @@ namespace MpvUtilities
             }
             else
             {
-                fileXml = FileXmlUtilities.GenerateEmptyFileInfoDocument(filesize);
+                fileXml = CMXmlUtilities.GenerateEmptyFileInfoDocument(filesize);
             }
 
-            FileXmlUtilities.AddFileInfoElement(fileXml, filePath);
+            CMXmlUtilities.AddFileInfoElement(fileXml, filePath);
 
             fileXml.Save(xmlFilename);
         }

@@ -43,13 +43,8 @@
   <ItemGroup>
     <Compile Include="CurrentState.cs" />
     <Compile Include="DepotPathUtilities.cs" />
-    <Compile Include="ExtractFromDepot.cs" />
     <Compile Include="FileList.cs" />
     <Compile Include="FilePickerUtility.cs" />
-    <Compile Include="FileXmlUtilities.cs" />
-    <Compile Include="HashToDepot.cs" />
-    <Compile Include="MiscUtilities.cs" />
-    <Compile Include="MoreXmlUtilities.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SHA1HashUtilities.cs" />
     <Compile Include="TraverseDir.cs" />
