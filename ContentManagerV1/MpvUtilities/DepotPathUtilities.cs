@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace MpvUtilities
 {
@@ -25,6 +26,23 @@ namespace MpvUtilities
                 Directory.CreateDirectory(dirName);
 
             return System.IO.Path.Combine(dirName, hashValue);
+        }
+
+        public static string GetExistingXmlDirectoryInfoFileName(string originalDirectoryPath, string depotRootPath)
+        {
+            string hashValue = SH1HashUtilities.HashString(originalDirectoryPath);
+
+            string subDirName = hashValue.Substring(0, 2);
+            string dirName = System.IO.Path.Combine(GetWorkingDirPath(depotRootPath), subDirName);
+
+            if (!Directory.Exists(dirName))
+                throw new Exception(dirName + "does not exist");
+
+            string fullPath =  System.IO.Path.Combine(dirName, hashValue + ".xml");
+            if (!File.Exists(fullPath))
+                throw new Exception(fullPath + "does not exist!");
+
+            return fullPath;
         }
 
         public static string GetXmlDirectoryInfoFileName(string originalDirectoryPath, string depotRootPath)

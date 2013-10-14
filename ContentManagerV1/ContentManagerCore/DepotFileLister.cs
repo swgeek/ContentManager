@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MpvUtilities;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -89,13 +90,8 @@ namespace ContentManagerCore
 
         public static DirListing GetDirListing(string originalPath, string depotRootPath)
         {
-            string dirhash = MpvUtilities.SH1HashUtilities.HashString(originalPath);
+            string dirInfoPath = DepotPathUtilities.GetExistingXmlDirectoryInfoFileName(originalPath, depotRootPath);
 
-            string workingDir = MpvUtilities.DepotPathUtilities.GetWorkingDirPath(depotRootPath);
-            if (!Directory.Exists(workingDir))
-                throw new Exception(workingDir + "does not exist");
-
-            string dirInfoPath = MiscUtilities.GetExistingHashFileName(depotRootPath, dirhash, ".xml");
             XDocument dirXml = XDocument.Load(dirInfoPath);
 
             DirListing listing = new DirListing(originalPath);

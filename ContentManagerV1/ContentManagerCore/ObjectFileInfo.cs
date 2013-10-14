@@ -47,7 +47,7 @@ namespace ContentManagerCore
             return foundMatch;
         }
 
-        public string ToString()
+        public override string ToString()
         {
             string outputString = "Depot: ";
             outputString += DepotName + "\n";
