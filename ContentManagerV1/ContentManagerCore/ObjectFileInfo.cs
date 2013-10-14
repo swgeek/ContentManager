@@ -30,13 +30,14 @@ namespace ContentManagerCore
             }
         }
 
-        public bool Contains(string searchString)
+        public bool FilenameContains(string searchString)
         {
             bool foundMatch = false;
 
             foreach (string s in OriginalPaths)
             {
-                if (s.Contains(searchString))
+                string filename = System.IO.Path.GetFileName(s);
+                if (filename.Contains(searchString))
                 {
                     foundMatch = true;
                     break;
@@ -44,6 +45,17 @@ namespace ContentManagerCore
             }
     
             return foundMatch;
+        }
+
+        public string ToString()
+        {
+            string outputString = "Depot: ";
+            outputString += DepotName + "\n";
+            outputString += HashValue + "\n";
+            foreach (string s in OriginalPaths)
+                outputString += s + "\n";
+
+            return outputString;
         }
     }
 }
