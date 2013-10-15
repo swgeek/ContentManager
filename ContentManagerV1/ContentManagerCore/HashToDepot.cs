@@ -172,26 +172,5 @@ namespace ContentManagerCore
             MiscUtilities.AppendToLog(" finished", depotRootPath);
 
         }
-
-        // don't have way to start from saved state yet, so either remove this or add the restore code
-        public void SaveState()
-        {
-            CurrentState state = new CurrentState();
-            state.sourceDirectory = sourceDirPath;
-
-            state.destinationDirectory = depotRootPath;
-            state.list = filelist.fileList.ToArray();
-
-            string outputFileName = System.IO.Path.Combine(depotRootPath, "inprocess.xml");
-
-
-            using (var writer = new System.IO.StreamWriter(outputFileName))
-            {
-                System.Xml.Serialization.XmlSerializer serializer = new System.Xml.Serialization.XmlSerializer(state.GetType());
-                serializer.Serialize(writer, state);
-                writer.Flush();
-            }
-        }
-
     }
 }

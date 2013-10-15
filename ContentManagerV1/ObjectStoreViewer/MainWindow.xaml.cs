@@ -27,7 +27,7 @@ namespace ObjectStoreViewer
             if ((depotRoot != null) && (depotRoot != String.Empty))
             {
                 // depot name is name of directory, have to make those unique.
-                depotName = System.IO.Path.GetFileName(depotRoot);
+                depotName = DepotPathUtilities.GetDepotName(depotRoot);
 
                 // for now disable the button. In real version allow user to change the root directory
                 ChooseDepot.Visibility = System.Windows.Visibility.Collapsed;

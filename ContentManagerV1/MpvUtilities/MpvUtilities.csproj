@@ -41,8 +41,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CurrentState.cs" />
-    <Compile Include="DepotPathUtilities.cs" />
     <Compile Include="FileList.cs" />
     <Compile Include="FilePickerUtility.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

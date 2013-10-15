@@ -1,9 +1,9 @@
 ﻿using ContentManagerCore;
 using MpvUtilities;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Windows;
-using System.Collections.Generic;
 
 namespace ObjectFileListWithSearch
 {
@@ -27,38 +27,35 @@ namespace ObjectFileListWithSearch
         private void searchButton_Click(object sender, RoutedEventArgs e)
         {
             resultsListBox.Items.Clear();
+            string depotRootDir = depotRootTextBlock.Text;
+            if (!Directory.Exists(depotRootDir))
+                return;
 
             List<string> outputText = new List<string>();
 
-            string depotRootDir = depotRootTextBlock.Text;
-            if (Directory.Exists(depotRootDir))
+            string searchString = searchTextBox.Text;
+            if (searchString == "*")
+                searchString = null;
+
+            string[] objectFileList = DepotFileLister.GetListOfHashedFilesInDepotMatchingSearch(depotRootDir, searchString);
+
+            foreach (string filename in objectFileList)
             {
-                string searchString = searchTextBox.Text;
-
-                // probably should put the following into core
-                string[] objectFileList = ContentManagerCore.DepotFileLister.GetListOfAllHashedFilesInDepot(depotRootDir);
-                foreach (string filename in objectFileList)
-                {
-                     ObjectFileInfo fileInfo = new ObjectFileInfo(depotRootDir, filename);
+                ObjectFileInfo fileInfo = new ObjectFileInfo(depotRootDir, filename);
                     
-                     if (searchString == "*" || fileInfo.FilenameContains(searchString))
-                     {
-                         resultsListBox.Items.Add(filename);
-                         resultsListBox.Items.Add(fileInfo.FileSize);
+                resultsListBox.Items.Add(filename);
+                resultsListBox.Items.Add(fileInfo.FileSize);
 
-                         foreach (string path in fileInfo.OriginalPaths)
-                             resultsListBox.Items.Add(path);
+                foreach (string path in fileInfo.OriginalPaths)
+                    resultsListBox.Items.Add(path);
 
-                         outputText.Add(depotRootDir);
-                         outputText.Add(filename);
-                         outputText.Add(fileInfo.FileSize.ToString());
-                         outputText.AddRange(fileInfo.OriginalPaths);
-                     }
-                }
+                outputText.Add(depotRootDir);
+                outputText.Add(filename);
+                outputText.Add(fileInfo.FileSize.ToString());
+                outputText.AddRange(fileInfo.OriginalPaths);
             }
-
-            File.WriteAllLines(@"C:\output\results.txt", outputText);
             
+            File.WriteAllLines(@"C:\output\results.txt", outputText);            
         }
     }
 }

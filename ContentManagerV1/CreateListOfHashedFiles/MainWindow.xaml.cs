@@ -41,7 +41,7 @@ namespace CreateListOfHashedFiles
 
             if (Directory.Exists(sourceDirName) && Directory.Exists(rootDestDirName))
             {
-                int count = DepotFileLister.ListAllFilesInDepot(sourceDirName, rootDestDirName);
+                int count = DepotFileLister.WriteNewObjectFileListToFile(sourceDirName, rootDestDirName);
                 statusTextBlock.Text = count.ToString() + " files found, listed at " + rootDestDirName + ", FINISHED";
             }
         }

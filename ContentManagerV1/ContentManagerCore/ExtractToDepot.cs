@@ -8,14 +8,15 @@ namespace ContentManagerCore
 {
     public class ExtractFromDepot
     {
-            static public void ExtractFilesAndDirs(string sourceDir, string destDir)
+            static public void ExtractFilesAndDirs(string depotRootDir, string destDir)
             {
-                string rootDirXmlFile = System.IO.Path.Combine(sourceDir, "working", "RootDir.xml");
+                string workingDir = DepotPathUtilities.GetWorkingDirPath(depotRootDir);
+                string rootDirXmlFile = System.IO.Path.Combine(workingDir, "RootDir.xml");
                 XDocument RootDirXmlDoc = XDocument.Load(rootDirXmlFile);
                 string rootDir = RootDirXmlDoc.Root.Attribute("path").Value.ToString();
                 string dirNameOnly = System.IO.Path.GetFileName(rootDir.TrimEnd(System.IO.Path.DirectorySeparatorChar));
                 string newPath = System.IO.Path.Combine(destDir, dirNameOnly);
-                RecursivelyRestoreFiles(sourceDir, rootDir, newPath);
+                RecursivelyRestoreFiles(depotRootDir, rootDir, newPath);
             }
 
             static public void RecursivelyRestoreFiles(string depotRootDir, string originalDirPath, string newDirPath)

@@ -27,19 +27,6 @@ namespace MpvUtilities
             fileList.Add(dir.FullName);
         }
 
-        public string FileNames()
-        {
-            StringBuilder sb = new StringBuilder();
-
-            foreach (string f in fileList)
-            {
-                sb.Append(f);
-                sb.Append("\n");
-            }
-
-            return sb.ToString();
-        }
-
         public string CurrentFile()
         {
             if (this.Count > 0)

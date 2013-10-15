@@ -7,63 +7,71 @@ using System.Xml.Linq;
 
 namespace ContentManagerCore
 {
-
     // gets a list of all files in the depot
     public class DepotFileLister
     {
-        public static int ListAllFilesInDepot(string depotRootPath, string filelistDbRootPath)
+        public static int WriteNewObjectFileListToFile(string depotRootPath, string filelistDbRootPath)
         {
             string depotName = System.IO.Path.GetFileName(depotRootPath);
         
             int count = 0;
-            string filesSubdirName = "files";
-            string objectDirName = System.IO.Path.Combine(depotRootPath, filesSubdirName);
+            string objectDirName = DepotPathUtilities.GetObjectStoreDirNamePath(depotRootPath);
             if (!Directory.Exists(objectDirName))
                 throw new Exception(objectDirName + " does not exist - did you give correct root of archive directory?");
 
             string currentDirectoryName = string.Empty;
             for (int i = 0x00; i < 0x100; i++)
             {
-                List<string> filenameList = new List<string>();
+                List<string> filenameList = GetListOfObjectFilesStartingWithX2MatchingSearchString(objectDirName, i, null);
 
-                currentDirectoryName = System.IO.Path.Combine(objectDirName, i.ToString("X2"));
-                if (Directory.Exists(currentDirectoryName))
+                if (filenameList.Count > 0)
                 {
-                    DirectoryInfo currentDirectory = new DirectoryInfo(currentDirectoryName);
+                    count += filenameList.Count;
 
-                    foreach (FileInfo file in currentDirectory.GetFiles())
+                    string outputFileName = System.IO.Path.Combine(filelistDbRootPath, i.ToString("X2")) + ".txt";
+
+                    if (File.Exists(outputFileName))
                     {
-                        if (file.Extension != ".xml")
-                        {
-                            count++;
-                            //string fileNameAndSize = file.Name; // just file name for old version files
-                            string fileNameAndSize = file.Name + ";;" + file.Length.ToString() + ";;" + depotName;
-                            filenameList.Add(fileNameAndSize);
-                        }
+                        string[] existingFilenames = File.ReadAllLines(outputFileName);
+                        filenameList.AddRange(existingFilenames);
                     }
 
-                    if (filenameList.Count > 0)
-                    {
-                        string outputFileName = System.IO.Path.Combine(filelistDbRootPath, i.ToString("X2")) + ".txt";
-
-                        if (File.Exists(outputFileName))
-                        {
-                            string[] existingFilenames = File.ReadAllLines(outputFileName);
-                            filenameList.AddRange(existingFilenames);
-                        }
-
-                        File.WriteAllLines(outputFileName, filenameList.Distinct().ToArray());
-                    }
+                    File.WriteAllLines(outputFileName, filenameList.Distinct().ToArray());
                 }
             }
             return count;
         }
 
+        public static List<string> GetListOfObjectFilesStartingWithX2MatchingSearchString(string objectDirName, int X2, string searchString)
+        {
+            List<string> filelist = new List<string>();
+            string currentDirectoryName = System.IO.Path.Combine(objectDirName, X2.ToString("X2"));
+            if (Directory.Exists(currentDirectoryName))
+            {
+                DirectoryInfo currentDirectory = new DirectoryInfo(currentDirectoryName);
+
+                foreach (FileInfo file in currentDirectory.GetFiles())
+                {
+                    if (file.Extension != ".xml")
+                    {
+                        if ((searchString != null) && (file.Name.Contains(searchString)))
+                        filelist.Add(file.Name);
+                    }
+                }
+            }  
+            return filelist;
+        }
+
         public static string[] GetListOfAllHashedFilesInDepot(string depotRootPath)
+        {
+            return GetListOfHashedFilesInDepotMatchingSearch(depotRootPath, null);
+        }
+
+        public static string[] GetListOfHashedFilesInDepotMatchingSearch(string depotRootPath, string searchString)
         {
             string depotName = System.IO.Path.GetFileName(depotRootPath);
             List<string> filelist = new List<string>();
-            string objectDirName = MpvUtilities.DepotPathUtilities.GetObjectStoreDirNamePath(depotRootPath);
+            string objectDirName = DepotPathUtilities.GetObjectStoreDirNamePath(depotRootPath);
 
             if (!Directory.Exists(objectDirName))
                 throw new Exception(objectDirName + " does not exist - did you give correct root of archive directory?");
@@ -71,27 +79,30 @@ namespace ContentManagerCore
             string currentDirectoryName = string.Empty;
             for (int i = 0x00; i < 0x100; i++)
             {
-                currentDirectoryName = System.IO.Path.Combine(objectDirName, i.ToString("X2"));
-                if (Directory.Exists(currentDirectoryName))
-                {
-                    DirectoryInfo currentDirectory = new DirectoryInfo(currentDirectoryName);
-
-                    foreach (FileInfo file in currentDirectory.GetFiles())
-                    {
-                        if (file.Extension != ".xml")
-                        {
-                            filelist.Add(file.Name);
-                        }
-                    }
-                }
+                List<string> subFileList = GetListOfObjectFilesStartingWithX2MatchingSearchString(objectDirName, i, searchString);
+                filelist.AddRange(subFileList);
             }
+            return filelist.ToArray();
+        }
+
+        public static ObjectFileInfo[] SearchForFilenamesContaining(string depotRoot, string searchString)
+        {
+            string depotName = DepotPathUtilities.GetDepotName(depotRoot);
+            List<ObjectFileInfo> filelist = new List<ObjectFileInfo>();
+
+            string[] filenameArray = GetListOfHashedFilesInDepotMatchingSearch(depotRoot, searchString);
+            foreach (string file in filenameArray)
+            {
+                ObjectFileInfo newNode = new ObjectFileInfo(depotName, file);
+                filelist.Add(newNode);
+            }
+
             return filelist.ToArray();
         }
 
         public static DirListing GetDirListing(string originalPath, string depotRootPath)
         {
             string dirInfoPath = DepotPathUtilities.GetExistingXmlDirectoryInfoFileName(originalPath, depotRootPath);
-
             XDocument dirXml = XDocument.Load(dirInfoPath);
 
             DirListing listing = new DirListing(originalPath);
@@ -114,7 +125,7 @@ namespace ContentManagerCore
 
         public static List<string> GetRootDirectoriesInDepot(string depotRootPath)
         {
-            string workingDir = MpvUtilities.DepotPathUtilities.GetWorkingDirPath(depotRootPath);
+            string workingDir = DepotPathUtilities.GetWorkingDirPath(depotRootPath);
             if (!Directory.Exists(workingDir))
                 throw new Exception(workingDir + "does not exist");
 
@@ -122,7 +133,6 @@ namespace ContentManagerCore
 
             foreach (string xmlFileName in Directory.GetFiles(workingDir, "*.xml"))
             {
-                // for now just put xml filename in list
                 string rootDirectory = CMXmlUtilities.GetRootDirectoryFromXmlRootFile(xmlFileName);
                 dirListing.Add(rootDirectory);
             }
@@ -132,7 +142,7 @@ namespace ContentManagerCore
 
         public static long GetFileSize(string depotRoot, string hashedFilename)
         {
-            string filePath = MpvUtilities.DepotPathUtilities.GetHashFilePath(depotRoot, hashedFilename);
+            string filePath = DepotPathUtilities.GetHashFilePath(depotRoot, hashedFilename);
             if (! File.Exists(filePath))
                 throw new Exception(filePath + "does not exist");
 
@@ -142,13 +152,13 @@ namespace ContentManagerCore
 
         public static XDocument GetXml(string depotRoot, string hashedFilename)
         {
-            string xmlFilePath = MpvUtilities.DepotPathUtilities.GetObjectFileXmlPath(depotRoot, hashedFilename);
+            string xmlFilePath = DepotPathUtilities.GetObjectFileXmlPath(depotRoot, hashedFilename);
             return XDocument.Load(xmlFilePath);
         }
 
         public static void UpdateXml(string depotRoot, string hashedFilename, XDocument fileXml)
         {
-            string xmlFilePath = MpvUtilities.DepotPathUtilities.GetObjectFileXmlPath(depotRoot, hashedFilename);
+            string xmlFilePath = DepotPathUtilities.GetObjectFileXmlPath(depotRoot, hashedFilename);
             fileXml.Save(xmlFilePath);
         }
     }

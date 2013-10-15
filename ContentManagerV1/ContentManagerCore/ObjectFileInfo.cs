@@ -16,7 +16,7 @@ namespace ContentManagerCore
             HashValue = hashValue;
             OriginalPaths = new List<string>();
 
-            string xmlFile = MpvUtilities.DepotPathUtilities.GetObjectFileXmlPath(depotPath, hashValue);
+            string xmlFile = DepotPathUtilities.GetObjectFileXmlPath(depotPath, hashValue);
 
             XDocument xdoc = XDocument.Load(xmlFile);
 

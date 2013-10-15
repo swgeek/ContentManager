@@ -93,7 +93,7 @@ namespace ContentManagerV1
  
         private void OnSaveStateAndExitButtonPress(object sender, RoutedEventArgs e)
         {
-            hasher.SaveState();
+            countRemainingTextBlock.Text += "Interrupted";
         }
 
         private void OnOtherArchivesDbDirectoryButtonClick(object sender, RoutedEventArgs e)

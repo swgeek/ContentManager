@@ -42,6 +42,7 @@
     <Compile Include="CMXmlUtilities.cs" />
     <Compile Include="DepotDirectoryTree.cs" />
     <Compile Include="DepotFileLister.cs" />
+    <Compile Include="DepotPathUtilities.cs" />
     <Compile Include="DirectoryNode.cs" />
     <Compile Include="DirListing.cs" />
     <Compile Include="ExtractToDepot.cs" />

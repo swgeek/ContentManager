@@ -1,12 +1,19 @@
-﻿using System;
+﻿using MpvUtilities;
+using System;
 using System.IO;
 
-namespace MpvUtilities
+namespace ContentManagerCore
 {
     public class DepotPathUtilities
     {
         const string workingDirName = "working";
         const string objectStoreDirName = "files";
+
+        static public string GetDepotName(string depotRootPath)
+        {
+            // for now depot name is just name of root directory
+            return System.IO.Path.GetFileName(depotRootPath);
+        }
 
         static public string GetWorkingDirPath(string depotRoot)
         {
