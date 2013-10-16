@@ -12,6 +12,7 @@ namespace ObjectFileListWithSearch
     /// </summary>
     public partial class MainWindow : Window
     {
+
         public MainWindow()
         {
             InitializeComponent();
@@ -26,7 +27,7 @@ namespace ObjectFileListWithSearch
 
         private void searchButton_Click(object sender, RoutedEventArgs e)
         {
-            resultsListBox.Items.Clear();
+            //resultsListBox.Items.Clear();
             string depotRootDir = depotRootTextBlock.Text;
             if (!Directory.Exists(depotRootDir))
                 return;
@@ -35,22 +36,22 @@ namespace ObjectFileListWithSearch
 
             string searchString = searchTextBox.Text;
             if (searchString == "*")
-                searchString = null;
+                searchString = string.Empty;
 
-            string[] objectFileList = DepotFileLister.GetListOfHashedFilesInDepotMatchingSearch(depotRootDir, searchString);
-
-            foreach (string filename in objectFileList)
+            bool sortBySize = false;
+           if (SortBySizeCheckBox.IsChecked == true)
             {
-                ObjectFileInfo fileInfo = new ObjectFileInfo(depotRootDir, filename);
-                    
-                resultsListBox.Items.Add(filename);
-                resultsListBox.Items.Add(fileInfo.FileSize);
+                sortBySize = true;
+            }
 
-                foreach (string path in fileInfo.OriginalPaths)
-                    resultsListBox.Items.Add(path);
+            ObjectFileInfo[] objectFileList = DepotFileLister.SearchForFilenamesContaining(depotRootDir, searchString, sortBySize);
+                
+            resultsListBox.ItemsSource = objectFileList;
 
+            foreach (ObjectFileInfo fileInfo in objectFileList)
+            {
                 outputText.Add(depotRootDir);
-                outputText.Add(filename);
+                outputText.Add(fileInfo.HashValue);
                 outputText.Add(fileInfo.FileSize.ToString());
                 outputText.AddRange(fileInfo.OriginalPaths);
             }

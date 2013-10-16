@@ -30,7 +30,7 @@ namespace ContentManagerCore
             }
         }
 
-        public bool FilenameContains(string searchString)
+        public bool AFilenameContains(string searchString)
         {
             bool foundMatch = false;
 
@@ -52,6 +52,7 @@ namespace ContentManagerCore
             string outputString = "Depot: ";
             outputString += DepotName + "\n";
             outputString += HashValue + "\n";
+            outputString += FileSize + "\n";
             foreach (string s in OriginalPaths)
                 outputString += s + "\n";
 

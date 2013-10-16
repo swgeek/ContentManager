@@ -12,6 +12,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         
@@ -21,9 +22,11 @@
         <Label Grid.Row="1" Grid.Column="0" Content="Search Text" Margin="10" />
         <TextBox Grid.Row="1" Grid.Column="1" Name="searchTextBox"  Margin="10" />
         
-        <Button Grid.ColumnSpan="2" Grid.Row="2" Background="LightGreen"  Content="Search" Name="searchButton" Click="searchButton_Click" Margin="10"/>
+        <CheckBox Grid.Row="2" Name="SortBySizeCheckBox" HorizontalAlignment="Right" VerticalAlignment="Center" /> 
+        <Label Grid.Row="2" Grid.Column="1" Content="Sort By Size" />
+        <Button Grid.ColumnSpan="2" Grid.Row="3" Background="LightGreen"  Content="Search" Name="searchButton" Click="searchButton_Click" Margin="10"/>
 
-        <ListView Grid.ColumnSpan="2" Grid.Row="3"  Name="resultsListBox" Margin="10" />
+        <ListView Grid.ColumnSpan="2" Grid.Row="4"  Name="resultsListBox" Margin="10" />
                     
     </Grid>
 </Window>

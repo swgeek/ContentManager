@@ -8,7 +8,7 @@ namespace ContentManagerCore
     {
         public static void AddFilesizeToXml(string depotRoot)
         {
-            string[] filelist = DepotFileLister.GetListOfAllHashedFilesInDepot(depotRoot);
+            string[] filelist = DepotFileLister.GetListOfHashedFilesInDepot(depotRoot);
 
             foreach (string file in filelist)
             {

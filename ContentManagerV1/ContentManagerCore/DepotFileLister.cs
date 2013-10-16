@@ -22,7 +22,7 @@ namespace ContentManagerCore
             string currentDirectoryName = string.Empty;
             for (int i = 0x00; i < 0x100; i++)
             {
-                List<string> filenameList = GetListOfObjectFilesStartingWithX2MatchingSearchString(objectDirName, i, null);
+                List<string> filenameList = GetListOfObjectFilesStartingWithX2(objectDirName, i);
 
                 if (filenameList.Count > 0)
                 {
@@ -42,7 +42,7 @@ namespace ContentManagerCore
             return count;
         }
 
-        public static List<string> GetListOfObjectFilesStartingWithX2MatchingSearchString(string objectDirName, int X2, string searchString)
+        public static List<string> GetListOfObjectFilesStartingWithX2(string objectDirName, int X2)
         {
             List<string> filelist = new List<string>();
             string currentDirectoryName = System.IO.Path.Combine(objectDirName, X2.ToString("X2"));
@@ -54,7 +54,7 @@ namespace ContentManagerCore
                 {
                     if (file.Extension != ".xml")
                     {
-                        if ((searchString != null) && (file.Name.Contains(searchString)))
+                        //if ((searchString != null) && (file.Name.Contains(searchString)))
                         filelist.Add(file.Name);
                     }
                 }
@@ -62,12 +62,7 @@ namespace ContentManagerCore
             return filelist;
         }
 
-        public static string[] GetListOfAllHashedFilesInDepot(string depotRootPath)
-        {
-            return GetListOfHashedFilesInDepotMatchingSearch(depotRootPath, null);
-        }
-
-        public static string[] GetListOfHashedFilesInDepotMatchingSearch(string depotRootPath, string searchString)
+        public static string[] GetListOfHashedFilesInDepot(string depotRootPath)
         {
             string depotName = System.IO.Path.GetFileName(depotRootPath);
             List<string> filelist = new List<string>();
@@ -79,24 +74,33 @@ namespace ContentManagerCore
             string currentDirectoryName = string.Empty;
             for (int i = 0x00; i < 0x100; i++)
             {
-                List<string> subFileList = GetListOfObjectFilesStartingWithX2MatchingSearchString(objectDirName, i, searchString);
+                List<string> subFileList = GetListOfObjectFilesStartingWithX2(objectDirName, i);
                 filelist.AddRange(subFileList);
             }
             return filelist.ToArray();
         }
 
-        public static ObjectFileInfo[] SearchForFilenamesContaining(string depotRoot, string searchString)
+        public static ObjectFileInfo[] SearchForFilenamesContaining(string depotRoot, string searchString, bool sortBySize)
         {
             string depotName = DepotPathUtilities.GetDepotName(depotRoot);
             List<ObjectFileInfo> filelist = new List<ObjectFileInfo>();
 
-            string[] filenameArray = GetListOfHashedFilesInDepotMatchingSearch(depotRoot, searchString);
+            string[] filenameArray = GetListOfHashedFilesInDepot(depotRoot);
+            
             foreach (string file in filenameArray)
             {
-                ObjectFileInfo newNode = new ObjectFileInfo(depotName, file);
-                filelist.Add(newNode);
+                ObjectFileInfo newNode = new ObjectFileInfo(depotRoot, file);
+                if (newNode.AFilenameContains(searchString))
+                {
+                    filelist.Add(newNode);
+                }
             }
-
+            
+            if (sortBySize)
+            {
+               filelist.Sort((a, b) => b.FileSize.CompareTo(a.FileSize));
+                // This does not sort properly: filelist.OrderByDescending(x => x.FileSize);
+            }
             return filelist.ToArray();
         }
 
