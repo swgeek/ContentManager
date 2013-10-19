@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AddFilesizeToXml", "AddFile
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObjectFileListWithSearch", "ObjectFileListWithSearch\ObjectFileListWithSearch.csproj", "{2043896C-A5F4-4512-8627-737081312C69}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DepotViewer", "DepotViewer\DepotViewer.csproj", "{336807FA-A463-47E7-B55E-F3FDAD86D3F9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,6 +63,10 @@ Global
 		{2043896C-A5F4-4512-8627-737081312C69}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2043896C-A5F4-4512-8627-737081312C69}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2043896C-A5F4-4512-8627-737081312C69}.Release|Any CPU.Build.0 = Release|Any CPU
+		{336807FA-A463-47E7-B55E-F3FDAD86D3F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{336807FA-A463-47E7-B55E-F3FDAD86D3F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{336807FA-A463-47E7-B55E-F3FDAD86D3F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{336807FA-A463-47E7-B55E-F3FDAD86D3F9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

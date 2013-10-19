@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace ContentManagerCore
+namespace DepotViewer
 {
     // maybe get rid of this, use objectfileinfo instead
     public class FileNode
