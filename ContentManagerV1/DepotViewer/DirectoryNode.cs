@@ -8,17 +8,27 @@ namespace DepotViewer
     {
         public string HashValue { get; private set; }
         public string OriginalPath { get; private set; }
-        public string DepotRoot { get; set; }
-        public string Name { get; set; }
+        public string DepotRoot { get; private set; }
+        public string Name { get; private set; }
 
-        public List<FileNode> Files { get; set; }
-        public List<DirectoryNode> Directories { get; set; }
+        public List<FileNode> Files { get; private set; }
+        public List<DirectoryNode> Directories { get; private set; }
 
         public DirectoryNode(string depotRoot, string originalPath)
         {
             DepotRoot = depotRoot;
             OriginalPath = originalPath;
             Name = Path.GetFileName(originalPath);
+            HashValue = MpvUtilities.SH1HashUtilities.HashString(originalPath);
+            Files = new List<FileNode>();
+            Directories = new List<DirectoryNode>();
+        }
+
+        public DirectoryNode(string depotRoot, string originalPath, string dirName)
+        {
+            DepotRoot = depotRoot;
+            OriginalPath = originalPath;
+            Name = dirName;
             HashValue = MpvUtilities.SH1HashUtilities.HashString(originalPath);
             Files = new List<FileNode>();
             Directories = new List<DirectoryNode>();

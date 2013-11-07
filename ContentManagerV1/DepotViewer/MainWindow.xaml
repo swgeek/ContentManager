@@ -12,10 +12,18 @@
                 Click="PickDepotRootDirButton_Click"  VerticalAlignment="Center" HorizontalAlignment="Center" />
 
 
-        <TreeView Name="dirTreeView"  Margin="8"  Visibility="Collapsed" ItemsSource="{Binding Directories}" >
-            <TreeView.ItemTemplate>
+        <TreeView Name="dirTreeView"  Margin="8"  Visibility="Collapsed" ItemsSource="{Binding DirTrees}" >
+            <TreeView.ItemTemplate>               
                 <HierarchicalDataTemplate DataType="x:Type local:TreeNode" ItemsSource="{Binding Directories}">
-                    <TreeViewItem Header="{Binding Name}" />
+                    <TreeViewItem Header="{Binding Name}">
+                        <ListView ItemsSource="{Binding Files}">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Label Content="{Binding Path=FileName}" />
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </TreeViewItem>
                 </HierarchicalDataTemplate>
             </TreeView.ItemTemplate>
         </TreeView>

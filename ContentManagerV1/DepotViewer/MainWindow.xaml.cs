@@ -22,8 +22,6 @@ namespace DepotViewer
     /// </summary>
     public partial class MainWindow : Window
     {
-        DepotInfo depotInfo = null;
-
         public MainWindow()
         {
             InitializeComponent();
@@ -31,24 +29,19 @@ namespace DepotViewer
 
         private void PickDepotRootDirButton_Click(object sender, RoutedEventArgs e)
         {
-            string depotRoot = FilePickerUtility.PickDirectory();
-            if ((depotRoot != null) && (depotRoot != String.Empty))
+            string depotRootPath = FilePickerUtility.PickDirectory();
+            if ((depotRootPath != null) && (depotRootPath != String.Empty))
             {
+                DepotRootViewModel depotRootModel = new DepotRootViewModel(depotRootPath);
 
-                string dir =  ContentManagerCore.DepotFileLister.GetRootDirectoriesInDepot(depotRoot).First();
-
-                DirectoryNode dirNode = new DirectoryNode(depotRoot, dir );
-                dirNode.RecursivelyFill();
-
-
-                //depotInfo = new DepotInfo(depotRoot);
+                string dir =  ContentManagerCore.DepotFileLister.GetRootDirectoriesInDepot(depotRootPath).First();
 
                 // for now disable the button. In real version allow user to change the root directory
                 ChooseDepot.Visibility = System.Windows.Visibility.Collapsed;
                 dirTreeView.Visibility = System.Windows.Visibility.Visible;
 
                 //DirTreeNode node = DirTreeNode.GetBaseDirs(depotRoot);
-                dirTreeView.DataContext = dirNode;          
+                dirTreeView.DataContext = depotRootModel;      
             }
         }
 

@@ -53,6 +53,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="DepotRootViewModel.cs" />
     <Compile Include="DirectoryNode.cs" />
     <Compile Include="DirTreeNode.cs" />
     <Page Include="MainWindow.xaml">

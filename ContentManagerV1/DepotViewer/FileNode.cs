@@ -6,13 +6,17 @@ namespace DepotViewer
     public class FileNode
     {
         public string DepotName { get; private set; }
-        public string HashValue { get; private set; }
-        public List<string> OriginalPaths { get; set; }
+        public string FileName { get; private set; }
+        //public List<string> OriginalPaths { get; set; }
+        // FirstOriginalName
+        // Filesize
 
         public FileNode(string depotName, string hashValue)
         {
             DepotName = depotName;
-            HashValue = hashValue;
+            FileName = hashValue;
+
+            
         }
     }
 }
