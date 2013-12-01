@@ -9,6 +9,7 @@ namespace ContentManagerCore
     {
         static public XDocument GenerateEmptyFileInfoDocument(long filesize)
         {
+            // ADD DEPOT LOCATION?
             XElement rootElement = new XElement("FileInfo");
             rootElement.Add(new XAttribute("Filesize", filesize.ToString()));
             rootElement.Add(new XAttribute("Status", "todo"));
@@ -133,5 +134,15 @@ namespace ContentManagerCore
             string rootDir = xdoc.Root.Attribute("path").Value.ToString();
             return rootDir;
         }
+
+        // copies file if destination does not exist, otherwise merges the two
+        public static void CopyOrMergeXmlFiles(string sourceXmlFile, string destinationXmlFile)
+        {
+            if (File.Exists(destinationXmlFile))
+                MergeXmlFiles(sourceXmlFile, destinationXmlFile);
+            else
+                File.Copy(sourceXmlFile, destinationXmlFile);
+        }
+
     }
 }

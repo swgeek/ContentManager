@@ -62,6 +62,43 @@ namespace ContentManagerCore
             return filelist;
         }
 
+
+        //public static XDocument AddDepotNameToXml(string depotName, string xmlFilePath, DirectoryInfo dir)
+        //{
+        //    XDocument fileXml = null;
+
+        //    string objectFileName = System.IO.Path.GetFileNameWithoutExtension(xmlFilePath);
+        //    if (File.Exists(System.IO.Path.Combine(dir.FullName, objectFileName)))
+        //    {
+        //        // add depot info
+        //        fileXml = XDocument.Load(xmlFilePath);              
+
+        //        if (fileXml.Root.Attribute("Depot") == null)
+        //            fileXml.Root.Add(new XAttribute("Depot", depotName));
+        //    }
+        //    return fileXml;
+        //}
+
+        public static List<string> GetListOfFileInfoXmlFilesStartingWithX2(string objectDirName, int X2)
+        {
+            List<string> filelist = new List<string>();
+            string currentDirectoryName = System.IO.Path.Combine(objectDirName, X2.ToString("X2"));
+            if (Directory.Exists(currentDirectoryName))
+            {
+                DirectoryInfo currentDirectory = new DirectoryInfo(currentDirectoryName);
+
+                foreach (FileInfo file in currentDirectory.GetFiles())
+                {
+                    if (file.Extension == ".xml")
+                    {
+                        filelist.Add(file.FullName);
+                    }
+                }
+            }
+            return filelist;
+        }
+
+
         public static string[] GetListOfHashedFilesInDepot(string depotRootPath)
         {
             string depotName = System.IO.Path.GetFileName(depotRootPath);
@@ -164,6 +201,31 @@ namespace ContentManagerCore
         {
             string xmlFilePath = DepotPathUtilities.GetObjectFileXmlPath(depotRoot, hashedFilename);
             fileXml.Save(xmlFilePath);
+        }
+
+
+        // Get list of all Xml info files in depot
+        // maybe switch to linq and fix so do not need entire list before starting?
+        public static List<string> GetListOfXmlInfoFilesInDepot(string depotRootPath)
+        {
+            List<string> fileList = new List<string>();
+
+            string objectDirName = DepotPathUtilities.GetObjectStoreDirNamePath(depotRootPath);
+            if (!Directory.Exists(objectDirName))
+                throw new Exception(objectDirName + " does not exist - did you give correct root of archive directory?");
+
+            string currentDirectoryName = string.Empty;
+            for (int i = 0x00; i < 0x100; i++)
+            {
+                List<string> subList = GetListOfFileInfoXmlFilesStartingWithX2(objectDirName, i);
+
+                if (subList != null)
+                {
+                    // add to overall list
+                    fileList.AddRange(subList);
+                }
+            }
+            return fileList;
         }
     }
 }

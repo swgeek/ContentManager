@@ -79,6 +79,7 @@ namespace ObjectStoreViewer
             }           
         }
 
+
         private void ChooseDestinationDirectory_Click(object sender, RoutedEventArgs e)
         {
             string dirname = FilePickerUtility.PickDirectory();

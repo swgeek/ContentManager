@@ -76,5 +76,17 @@ namespace ContentManagerCore
             string subDirName = hashValue.Substring(0, 2);
             return System.IO.Path.Combine(GetObjectStoreDirNamePath(depotRootPath), subDirName);
         }
+
+        static public string GetXmFileInfoPath(string parentDir, string filepath)
+        {
+            string filename = System.IO.Path.GetFileName(filepath);
+            string subDirName = filename.Substring(0, 2);
+            string subDirPath = System.IO.Path.Combine(parentDir, subDirName);
+            if (!Directory.Exists(subDirPath))
+            {
+                Directory.CreateDirectory(subDirPath);
+            }
+            return System.IO.Path.Combine(subDirPath, filename);
+        }
     }
 }
