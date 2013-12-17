@@ -8,6 +8,8 @@ using System.Windows.Documents;
 using System.Xml.Linq;
 
 
+// THis looks like an older version of MoveFileInfoXml. Main difference seems to be that this also 
+// adds filesizes. At some point, remove this if it is really redundant.
 namespace MoveXmlFilesToXmlDir
 {
     /// <summary>

@@ -144,5 +144,12 @@ namespace ContentManagerCore
                 File.Copy(sourceXmlFile, destinationXmlFile);
         }
 
+        public static void MoveOrMergeXmlFiles(string sourceXmlFile, string destinationXmlFile)
+        {
+            if (File.Exists(destinationXmlFile))
+                MergeXmlFiles(sourceXmlFile, destinationXmlFile);
+            else
+                File.Move(sourceXmlFile, destinationXmlFile);
+        }
     }
 }

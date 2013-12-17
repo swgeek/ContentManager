@@ -1,24 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using ContentManagerCore;
+﻿using ContentManagerCore;
 using MpvUtilities;
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Windows;
+using System.Windows.Documents;
 
 
 // Not a good name. Copies/Merges the fileInfoXML to another directory. This gives us one directory
 // listing of all files in all depots. May add previews later...
+
+// Note, think this is the actual fileInfo XML, i.e. originally in the object store, NOT the dir Info
 namespace MoveFileInfoXml
 {
     /// <summary>
@@ -52,7 +44,8 @@ namespace MoveFileInfoXml
                 {
                     // copy/merge into destination dir
                     string newFilePath = DepotPathUtilities.GetXmFileInfoPath(rootDestDirName, filename);
-                    CMXmlUtilities.CopyOrMergeXmlFiles(filename, newFilePath);
+                    //CMXmlUtilities.CopyOrMergeXmlFiles(filename, newFilePath);
+                    CMXmlUtilities.MoveOrMergeXmlFiles(filename, newFilePath);
                 }
             }
 

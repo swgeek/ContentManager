@@ -1,0 +1,25 @@
+have three directories:
+
+- fileInfoXml
+- dirInfoXml
+- objectFiles
+
+also maybe a temp directory for building directory xml, probably skip, as will do in database later anyway.
+
+---
+
+Migration:
+
+1) Tool to combine all xml files - move from original place?
+
+2) Tool to combine all dir files (may already have) - again, move, but no necessary to move
+
+3) Tool to combine all object files
+
+
+-- 
+
+Sorting:
+
+1) took to extract all files for each type into specific object store. Object files only.
+
