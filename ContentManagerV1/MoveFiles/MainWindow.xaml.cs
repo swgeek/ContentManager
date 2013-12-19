@@ -40,7 +40,7 @@ namespace MoveFiles
 
         }
 
-        private void OnCopyFilesButtonClick(object sender, RoutedEventArgs e)
+        private void OnMoveFilesButtonClick(object sender, RoutedEventArgs e)
         {
             string sourceDirName = sourceDirectoryTextBlock.Text;
             string destinationDirName = destinationDirectoryTextBlock.Text;
@@ -66,7 +66,7 @@ namespace MoveFiles
 
                 foreach (string directory in directoryList)
                 {
-                    CopyFilesFromDir(directory, destinationDirName, logsDirName);
+                    MoveFilesFromDir(directory, destinationDirName, logsDirName);
                     statusTextBlock.Text = directory + " copied";
                 }
 
@@ -77,7 +77,7 @@ namespace MoveFiles
             }
         }
 
-        private void CopyFilesFromDir(string sourceDir, string destinationDirRoot, string logsDirName)
+        private void MoveFilesFromDir(string sourceDir, string destinationDirRoot, string logsDirName)
         {
             string[] fileList = Directory.GetFiles(sourceDir);
 
@@ -90,7 +90,15 @@ namespace MoveFiles
             foreach (string file in fileList)
             {
                 string destFileName = System.IO.Path.Combine(destinationDir, System.IO.Path.GetFileName(file));
-                File.Copy(file, destFileName);
+                if (File.Exists(destFileName))
+                {
+                    string problemLogFileName = System.IO.Path.Combine(logsDirName, System.IO.Path.GetFileName(file) + "_already exists.txt");
+                    File.WriteAllText(problemLogFileName, destFileName + " already exists");
+                }
+                else
+                {
+                    File.Move(file, destFileName);
+                }
             }
 
             // log results

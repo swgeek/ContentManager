@@ -147,9 +147,16 @@ namespace ContentManagerCore
         public static void MoveOrMergeXmlFiles(string sourceXmlFile, string destinationXmlFile)
         {
             if (File.Exists(destinationXmlFile))
+            {
                 MergeXmlFiles(sourceXmlFile, destinationXmlFile);
+                File.Delete(sourceXmlFile);
+            }
             else
+            {
                 File.Move(sourceXmlFile, destinationXmlFile);
+            }
         }
+
+
     }
 }
