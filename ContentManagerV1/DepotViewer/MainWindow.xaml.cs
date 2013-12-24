@@ -15,6 +15,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
+// work in progress
+
 namespace DepotViewer
 {
     /// <summary>

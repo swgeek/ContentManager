@@ -88,7 +88,7 @@ namespace ListExtensionsAndFiles
 
                 // should be just xml files in here, skip any extra files. Production quality code should log this somewhere
                 if (Path.GetExtension(filename).ToLower() != ".xml")
-                    break;
+                    continue;
 
                 XDocument xdoc = XDocument.Load(filename);
 
