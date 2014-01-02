@@ -10,6 +10,7 @@ namespace ContentManagerCore
     // gets a list of all files in the depot
     public class DepotFileLister
     {
+        // goes through objects store and lists out every file in there
         public static int WriteNewObjectFileListToFile(string depotRootPath, string filelistDbRootPath)
         {
             string depotName = System.IO.Path.GetFileName(depotRootPath);
@@ -42,6 +43,7 @@ namespace ContentManagerCore
             return count;
         }
 
+        // goes through object store and object files starting with X2
         public static List<string> GetListOfObjectFilesStartingWithX2(string objectDirName, int X2)
         {
             List<string> filelist = new List<string>();
@@ -79,6 +81,8 @@ namespace ContentManagerCore
         //    return fileXml;
         //}
 
+        // goes through object store and finds all xml file info files by looking for the
+        // xml extension. Will not work once the xml files are transferred out 
         public static List<string> GetListOfFileInfoXmlFilesStartingWithX2(string objectDirName, int X2)
         {
             List<string> filelist = new List<string>();
@@ -99,6 +103,7 @@ namespace ContentManagerCore
         }
 
 
+        // finds all object files in depot, does this by listing out object files in each subdir
         public static string[] GetListOfHashedFilesInDepot(string depotRootPath)
         {
             string depotName = System.IO.Path.GetFileName(depotRootPath);
@@ -117,6 +122,9 @@ namespace ContentManagerCore
             return filelist.ToArray();
         }
 
+        // searches for filenames containing a search string.
+        // works by lookint at the xml fileInfo file in the same directory as the object
+        // file, so will not work once the xml files are moved elsewhere.
         public static ObjectFileInfo[] SearchForFilenamesContaining(string depotRoot, string searchString, bool sortBySize)
         {
             string depotName = DepotPathUtilities.GetDepotName(depotRoot);
@@ -141,6 +149,8 @@ namespace ContentManagerCore
             return filelist.ToArray();
         }
 
+        // uses the dirInfo to get a directory listing of the given original path
+        // this allows us to see the original directory structure before hashing
         public static DirListing GetDirListing(string originalPath, string depotRootPath)
         {
             string dirInfoPath = DepotPathUtilities.GetExistingXmlDirectoryInfoFileName(originalPath, depotRootPath);
@@ -164,6 +174,7 @@ namespace ContentManagerCore
             return listing;
         }
 
+        // gets a list of original root directories, i.e. the root of the dirs before hashing
         public static List<string> GetRootDirectoriesInDepot(string depotRootPath)
         {
             string workingDir = DepotPathUtilities.GetWorkingDirPath(depotRootPath);
@@ -181,6 +192,7 @@ namespace ContentManagerCore
             return dirListing;
         }
 
+        // filesize of object file (hashed file)
         public static long GetFileSize(string depotRoot, string hashedFilename)
         {
             string filePath = DepotPathUtilities.GetHashFilePath(depotRoot, hashedFilename);
@@ -191,12 +203,16 @@ namespace ContentManagerCore
             return fileInfo.Length;           
         }
 
+        // gets the corresponding fileinfo xml for a hashed file
+        // this will not work once the xml files are moved elsewhere
         public static XDocument GetXml(string depotRoot, string hashedFilename)
         {
             string xmlFilePath = DepotPathUtilities.GetObjectFileXmlPath(depotRoot, hashedFilename);
             return XDocument.Load(xmlFilePath);
         }
 
+        // updates the xml fileinfo for a object file
+        // this will not work once the xml files are moved elsewhere
         public static void UpdateXml(string depotRoot, string hashedFilename, XDocument fileXml)
         {
             string xmlFilePath = DepotPathUtilities.GetObjectFileXmlPath(depotRoot, hashedFilename);
@@ -206,6 +222,7 @@ namespace ContentManagerCore
 
         // Get list of all Xml info files in depot
         // maybe switch to linq and fix so do not need entire list before starting?
+        // this will not work once the xml files are moved elsewhere
         public static List<string> GetListOfXmlInfoFilesInDepot(string depotRootPath)
         {
             List<string> fileList = new List<string>();

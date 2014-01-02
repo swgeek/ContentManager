@@ -34,6 +34,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ListExtensionsAndFiles", "L
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtractFilesFromList", "ExtractFilesFromList\ExtractFilesFromList.csproj", "{59A416FE-D25B-4F5E-85B2-84BB13C118E4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RenameObjectFileWithExtension", "RenameObjectFileWithExtension\RenameObjectFileWithExtension.csproj", "{EE2ED7D4-4893-45F1-B207-6F461912CC51}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -96,6 +98,10 @@ Global
 		{59A416FE-D25B-4F5E-85B2-84BB13C118E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{59A416FE-D25B-4F5E-85B2-84BB13C118E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{59A416FE-D25B-4F5E-85B2-84BB13C118E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE2ED7D4-4893-45F1-B207-6F461912CC51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE2ED7D4-4893-45F1-B207-6F461912CC51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE2ED7D4-4893-45F1-B207-6F461912CC51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE2ED7D4-4893-45F1-B207-6F461912CC51}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
