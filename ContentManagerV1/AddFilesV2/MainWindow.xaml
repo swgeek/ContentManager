@@ -1,0 +1,48 @@
+﻿<Window x:Class="AddFilesV2.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="350" Width="525">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="2*" />
+        </Grid.ColumnDefinitions>
+
+        <Button Margin="10" Click="OnSourceDirectoryButtonClick" Grid.Row="0" Grid.Column="0">Source Directory</Button>
+        <TextBlock Margin="10" Name="sourceDirectoryTextBlock" Grid.Row="0"  Grid.Column="1" />
+
+        <Button Margin="10" Click="OnDestinationDirectoryButtonClick" Grid.Row="1" Grid.Column="0">Destination Directory</Button>
+        <TextBlock Margin="10" Name="destinationDirectoryTextBlock"  Grid.Row="1"  Grid.Column="1" />
+
+        <Button Margin="10" Click="OnDbFileButtonClick" Grid.Row="2" Grid.Column="0">Database File</Button>
+        <TextBlock Margin="10" Name="dbFileTextBlock"  Grid.Row="2"  Grid.Column="1" />
+
+        <Button Name="getFilesButton" Margin="10" Grid.ColumnSpan="2" Background="GreenYellow" Content="get file list" Grid.Row="3" 
+                Grid.Column="0" Click="OnGetFilesButtonClick" />
+        
+        <Button Name="hashFilesbutton" Margin="10" Grid.ColumnSpan="2" Background="GreenYellow" Content="hash files" Grid.Row="3" Grid.Column="0" 
+                Click="hashFilesbutton_Click" Visibility="Collapsed" />
+
+        <Label Margin="10" Grid.Column="0" Grid.Row="4" Content="Remaining:" />
+        <TextBlock Margin="10" Name="countRemainingTextBlock"  Grid.Row="4"  Grid.Column="1" />
+
+        <Label Margin="10" Grid.Column="0" Grid.Row="5" Content="Current File:" />
+        <TextBlock Margin="10" Name="currentFileTextBlock"  Grid.Row="5"  Grid.Column="1" />
+
+        <Button Margin="10" Background="Red"  Content="Stop After this file" Grid.Row="6" Grid.Column="1" Click="OnStopButtonClick" />
+
+        <Button Margin="10" Background="Red"  Content="Save state and exit" Grid.Row="7" Grid.Column="1" Click="OnSaveStateAndExitButtonPress" />
+
+    </Grid>
+</Window>

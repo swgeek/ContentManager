@@ -1,5 +1,6 @@
 ﻿using System.IO;
 
+// maybe roll this into FileList? See where else it is used.
 namespace MpvUtilities
 {
     public class TraverseDir
@@ -26,6 +27,14 @@ namespace MpvUtilities
         {
             FileList list = new FileList();
             TraverseDirRecursively(dir, list);
+            return list;
+        }
+
+        static public FileList GetAllFilesInDir(string dir)
+        {
+            DirectoryInfo sourceDir = new DirectoryInfo(dir);
+            FileList list = new FileList();
+            TraverseDirRecursively(sourceDir, list);
             return list;
         }
     }

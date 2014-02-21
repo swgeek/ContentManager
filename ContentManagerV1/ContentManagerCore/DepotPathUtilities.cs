@@ -25,6 +25,17 @@ namespace ContentManagerCore
             return Path.Combine(depotRoot, objectStoreDirName);
         }
 
+        static public string GetHashFilePathV2(string objectStoreRoot, string hashValue)
+        {
+            string subDirName = hashValue.Substring(0, 2);
+            string subDirPath = System.IO.Path.Combine(objectStoreRoot, subDirName);
+
+            if (!Directory.Exists(subDirPath))
+                Directory.CreateDirectory(subDirPath);
+
+            return System.IO.Path.Combine(subDirPath, hashValue);
+        }
+
         static public string GetHashFilePath(string depotRootPath, string hashValue)
         {
             string dirName = GetHashFileParentDirectoryPath(depotRootPath, hashValue);

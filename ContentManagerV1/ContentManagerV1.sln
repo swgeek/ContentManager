@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30110.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContentManagerV1", "ContentManagerV1\ContentManagerV1.csproj", "{C2791C5B-CCA6-4712-91AF-1E98BB48A26A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObjectStoreViewer", "ObjectStoreViewer\ObjectStoreViewer.csproj", "{5C72D583-5CD5-4A1E-BA1C-54A1D73603D7}"
@@ -37,6 +39,18 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RenameObjectFileWithExtension", "RenameObjectFileWithExtension\RenameObjectFileWithExtension.csproj", "{EE2ED7D4-4893-45F1-B207-6F461912CC51}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CopyFilesWithExceptionHandling", "CopyFilesWithExceptionHandling\CopyFilesWithExceptionHandling.csproj", "{2B10C083-AEDC-4D43-B711-E16EDA3D9E75}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AddFilesV2", "AddFilesV2\AddFilesV2.csproj", "{EBE0EA15-5BFC-4CE6-B6FC-C36911E9C90B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreateDbFile", "CreateDbFile\CreateDbFile.csproj", "{2B59440F-7C45-42C9-9908-C9AC1FD415AC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sqlite", "sqlite", "{24198570-155D-4C42-8335-EEF13109E7B9}"
+	ProjectSection(SolutionItems) = preProject
+		sqlite\System.Data.SQLite.dll = sqlite\System.Data.SQLite.dll
+		sqlite\System.Data.SQLite.xml = sqlite\System.Data.SQLite.xml
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbHelper", "DbInterface\DbHelper.csproj", "{47E3530A-EA57-4FF2-9A5E-BD193F853493}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -108,6 +122,18 @@ Global
 		{2B10C083-AEDC-4D43-B711-E16EDA3D9E75}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2B10C083-AEDC-4D43-B711-E16EDA3D9E75}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2B10C083-AEDC-4D43-B711-E16EDA3D9E75}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EBE0EA15-5BFC-4CE6-B6FC-C36911E9C90B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBE0EA15-5BFC-4CE6-B6FC-C36911E9C90B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBE0EA15-5BFC-4CE6-B6FC-C36911E9C90B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBE0EA15-5BFC-4CE6-B6FC-C36911E9C90B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B59440F-7C45-42C9-9908-C9AC1FD415AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B59440F-7C45-42C9-9908-C9AC1FD415AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B59440F-7C45-42C9-9908-C9AC1FD415AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B59440F-7C45-42C9-9908-C9AC1FD415AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47E3530A-EA57-4FF2-9A5E-BD193F853493}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47E3530A-EA57-4FF2-9A5E-BD193F853493}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47E3530A-EA57-4FF2-9A5E-BD193F853493}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47E3530A-EA57-4FF2-9A5E-BD193F853493}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
