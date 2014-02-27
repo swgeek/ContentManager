@@ -43,15 +43,15 @@ namespace CreateDbFile
             SQLiteConnection dbConnection = new SQLiteConnection(connectionString);
             dbConnection.Open();
 
-            string sql = "create table Files (hash char(40) PRIMARY KEY, filesize int)";
+            string sql = "create table Files (hash char(40) PRIMARY KEY, filesize int, status varchar(60))";
             SQLiteCommand command = new SQLiteCommand(sql, dbConnection);
             command.ExecuteNonQuery();
 
-            string filedirSqlString = "create table OriginalDirectoryForFile (hash char(40), directoryPath varchar(500))";
+            string filedirSqlString = "create table OriginalDirectoriesForFile (hash char(40), directoryPath varchar(500))";
             SQLiteCommand filedirCommand = new SQLiteCommand(filedirSqlString, dbConnection);
             filedirCommand.ExecuteNonQuery();
 
-            string dirSqlString = "create table OriginalDirectories (directoryPath varchar(500))";
+            string dirSqlString = "create table OriginalDirectorySubdirectories (directoryPath varchar(500), subdirectoryPath varchar(500))";
             SQLiteCommand dirCommand = new SQLiteCommand(dirSqlString, dbConnection);
             dirCommand.ExecuteNonQuery();
 

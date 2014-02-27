@@ -1,0 +1,15 @@
+﻿<Window x:Class="Viweer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="350" Width="525">
+    <Grid>
+        <ListView ItemsSource="{Binding}" x:Name="fileList" SelectionChanged="fileList_SelectionChanged">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Width="42" Header="hash" DisplayMemberBinding="{Binding Path=hash}" />
+                    <GridViewColumn Width="42" Header="filesize" DisplayMemberBinding="{Binding Path=filesize}" />
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </Grid>
+</Window>

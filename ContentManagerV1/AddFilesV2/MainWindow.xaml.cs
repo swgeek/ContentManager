@@ -136,11 +136,12 @@ namespace AddFilesV2
             {
                 string hashValue = SH1HashUtilities.HashFile(filePath);
                 string objectStoreFileName = DepotPathUtilities.GetHashFilePathV2(depotRootPath, hashValue);
-                if (!databaseHelper.FileAlreadyInDatabase(hashValue))
+                FileInfo fileInfo = new FileInfo(filePath);
+
+
+                if (!databaseHelper.FileAlreadyInDatabase(hashValue, fileInfo.Length))
                 {
                     CopyFile(filePath, hashValue);
-
-                    FileInfo fileInfo = new FileInfo(filePath);
                     // TODO: add location, size, type, maybe modified date to db under hash value
                     // TODO: add hashvalue to directory object in db. How to make directory key unique? Maybe add date or time of addition? not sure,
                     // think this one through...

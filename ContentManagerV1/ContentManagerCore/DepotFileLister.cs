@@ -192,6 +192,22 @@ namespace ContentManagerCore
             return dirListing;
         }
 
+        // gets a list of original root directories, i.e. the root of the dirs before hashing
+        public static List<string> GetRootDirectoriesInWorkingDir(string workingDir)
+        {
+            if (!Directory.Exists(workingDir))
+                throw new Exception(workingDir + "does not exist");
+
+            List<String> dirListing = new List<string>();
+
+            foreach (string xmlFileName in Directory.GetFiles(workingDir, "*.xml"))
+            {
+                string rootDirectory = CMXmlUtilities.GetRootDirectoryFromXmlRootFile(xmlFileName);
+                dirListing.Add(rootDirectory);
+            }
+
+            return dirListing;
+        }
         // filesize of object file (hashed file)
         public static long GetFileSize(string depotRoot, string hashedFilename)
         {
