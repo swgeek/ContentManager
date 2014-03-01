@@ -67,6 +67,7 @@ namespace PortDirInfoIntoDb
             {
                 foreach (string dirPath in ContentManagerCore.DepotFileLister.GetRootDirectoriesInDepot(depotRoot))
                 {
+                    databaseHelper.AddOriginalRootDirectoryIfNotInDb(dirPath);
                     logText += "Added " + dirPath + Environment.NewLine;
                     addDirectoryAndSubdirectories(dirPath, depotRoot);
                 }

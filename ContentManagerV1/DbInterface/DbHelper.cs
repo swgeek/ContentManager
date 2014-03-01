@@ -24,6 +24,8 @@ namespace DbInterface
         public int NumOfDuplicateDirs { get; private set; }
         public int NumOfDuplicateDirSubDirMappings { get; private set; }
 
+        public int NumOfNewFileLocations { get; private set; }
+        public int NumOfDuplicateFileLocations { get; private set; }
 
         public DbHelper(string databaseFilePathName)
         {
@@ -45,6 +47,7 @@ namespace DbInterface
             dbConnection.Close();
         }
 
+        // Maybe a good idea to create methods to perform queries. That way can add timers etc. when debugging.
         private void CreateDb(string dbFilePath)
         {
              if (System.IO.File.Exists(dbFilePath))
@@ -75,17 +78,28 @@ namespace DbInterface
             SQLiteCommand dirToSubdirCommand = new SQLiteCommand(dirToSubdirSqlString, dbConnection);
             dirToSubdirCommand.ExecuteNonQuery();
 
+            string objectStoreSqlString = "create table objectStores (id INTEGER PRIMARY KEY AUTOINCREMENT,  dirPath varchar(500))";
+            SQLiteCommand objectStoreSqlCommand = new SQLiteCommand(objectStoreSqlString, dbConnection);
+            objectStoreSqlCommand.ExecuteNonQuery();
+
+            string locationSqlString = "create table fileLocations (filehash char(40) PRIMARY KEY, objectStore1 int, objectStore2 int, "
+                   + "objectStore3 int, FOREIGN KEY (objectStore1) REFERENCES objectStores(id), FOREIGN KEY (objectStore2) REFERENCES objectStores(id), "
+                   + "FOREIGN KEY (objectStore3) REFERENCES objectStores(id) );";
+            SQLiteCommand locationSqlCommand = new SQLiteCommand(locationSqlString, dbConnection);
+            locationSqlCommand.ExecuteNonQuery();
+
             dbConnectionForCreate.Close();
         }
 
-        // temporary code to create new version of a particular table. Leave code here for now in case need to do something similar in the future
+        // temporary code to create new version of a particular table. Leave code here for now in case need to do something similar in the
+        // future
         public void CreateNewTable()
         {
             dbConnection.Open();
 
-            string dirSqlString = "create table originalDirectories (dirPathHash char(40) PRIMARY KEY, dirPath varchar(500))";
-            SQLiteCommand dirCommand = new SQLiteCommand(dirSqlString, dbConnection);
-            dirCommand.ExecuteNonQuery();
+            string createTableSqlString = "create table originalRootDirectories (rootdir char(500) PRIMARY KEY);";
+            SQLiteCommand sqlCommand = new SQLiteCommand(createTableSqlString, dbConnection);
+            sqlCommand.ExecuteNonQuery();
 
             dbConnection.Close();
         }
@@ -269,6 +283,138 @@ namespace DbInterface
             DataSet dataset = new DataSet();
             dataAdaptor.Fill(dataset);
             return dataset;
+        }
+
+        public int? GetObjectStoreId(string objectStorePath)
+        {
+            int? depotID = null;
+
+            string commandString = String.Format("select id from objectStores where dirPath = \"{0}\"", objectStorePath);
+            SQLiteCommand command = new SQLiteCommand(commandString, dbConnection);
+            SQLiteDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                depotID = reader.GetInt32(0);
+            }
+
+            return depotID;
+        }
+
+        public void CheckObjectStoreExistsAndInsertIfNot(string objectStorePath)
+        {
+            if (GetObjectStoreId(objectStorePath) == null)
+            {
+                string insertCommandString =
+                    string.Format("insert into objectStores (dirPath) values (\"{0}\")", objectStorePath);
+                SQLiteCommand insertCommand = new SQLiteCommand(insertCommandString, dbConnection);
+                insertCommand.ExecuteNonQuery();
+            }  
+        }
+
+        private void doInsertForAddFreshLocation(string filename, int objectStoreID)
+        {
+            string insertCommandString =
+                    string.Format("insert into fileLocations (filehash, objectStore1) values (\"{0}\", {1})", filename, objectStoreID);
+
+            SQLiteCommand insertCommand = new SQLiteCommand(insertCommandString, dbConnection);
+                insertCommand.ExecuteNonQuery();
+        }
+
+        private void InsertAdditionalFileLocation(string filename, int objectStoreID)
+        {
+            string insertSqlString;
+
+            string locationCommandString = String.Format("select objectStore1, objectStore2, objectStore3 from fileLocations where filehash = \"{0}\"", filename);
+            SQLiteCommand locationCommand = new SQLiteCommand(locationCommandString, dbConnection);
+            SQLiteDataReader locationReader = locationCommand.ExecuteReader();
+            if (locationReader.Read())
+            {
+                if (locationReader.IsDBNull(0))
+                    insertSqlString = String.Format("update fileLocations set objectStore1 = {0} where filehash = \"{1}\";", objectStoreID, filename);
+                else if (locationReader.IsDBNull(1))
+                    insertSqlString = String.Format("update fileLocations set objectStore2 = {0} where filehash = \"{1}\";", objectStoreID, filename);
+                else if (locationReader.IsDBNull(2))
+                    insertSqlString = String.Format("update fileLocations set objectStore3 = {0} where filehash = \"{1}\";", objectStoreID, filename);
+                else
+                    throw new Exception("non of the entries were null");
+
+                SQLiteCommand insertCommand = new SQLiteCommand(insertSqlString, dbConnection);
+                insertCommand.ExecuteNonQuery();
+
+            }
+        }
+
+
+        public List<int> GetFileLocations(string filename)
+        {
+            List<int> locationList = new List<int>();
+
+            string locationCommandString = String.Format("select objectStore1, objectStore2, objectStore3 from fileLocations where filehash = \"{0}\"", filename);
+            SQLiteCommand locationCommand = new SQLiteCommand(locationCommandString, dbConnection);
+            SQLiteDataReader locationReader = locationCommand.ExecuteReader();
+            if (locationReader.Read())
+            {
+                if (!locationReader.IsDBNull(0))
+                    locationList.Add(locationReader.GetInt32(0));
+                if (!locationReader.IsDBNull(1))
+                    locationList.Add(locationReader.GetInt32(1));
+                if (!locationReader.IsDBNull(2))
+                    locationList.Add(locationReader.GetInt32(2));
+            }
+
+            return locationList;
+        }
+
+        public void AddFileLocation(string filename, string objectStoreRoot)
+        {
+            CheckObjectStoreExistsAndInsertIfNot(objectStoreRoot);
+
+            int depotId = (int)GetObjectStoreId(objectStoreRoot);
+
+            // find any locations that exist already for this file
+            List<int> existingLocations = GetFileLocations(filename);
+
+            // if location already in existing locations, nothing to do, just return
+            if (existingLocations.Contains(depotId))
+            {
+                NumOfDuplicateFileLocations++;
+                return;
+            }
+
+            NumOfNewFileLocations++;
+            // if no locations yet, simple insert
+            if (existingLocations.Count == 0)
+            {
+                doInsertForAddFreshLocation(filename, depotId);
+                return;
+            }
+
+            // a location exists, but not this one, so insert it
+            if (existingLocations.Count == 3)
+                throw new Exception("already reached max number of locations, cannot add another");
+            // TODO: in future will have an additional table to handle more than three location, maybe even more than two.
+            else
+                InsertAdditionalFileLocation(filename, depotId);
+        }
+
+        public void AddOriginalRootDirectoryIfNotInDb(string dirPath)
+        {
+            string commandString = String.Format("select count(*) from originalRootDirectories where rootdir = \"{0}\"", dirPath);
+            int count = -1;
+            SQLiteCommand command = new SQLiteCommand(commandString, dbConnection);
+            SQLiteDataReader reader = command.ExecuteReader();
+            if (reader.Read())
+            {
+                count = reader.GetInt32(0);
+            }
+
+            if (count == 0)
+            {
+                string insertCommandString =
+                    string.Format("insert into originalRootDirectories (rootdir) values (\"{0}\")", dirPath);
+                SQLiteCommand insertCommand = new SQLiteCommand(insertCommandString, dbConnection);
+                insertCommand.ExecuteNonQuery();
+            }  
         }
     }
 }

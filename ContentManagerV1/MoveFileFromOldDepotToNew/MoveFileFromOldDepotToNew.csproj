@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{EA70DB00-104A-41FA-B39D-CC4689B523B3}</ProjectGuid>
+    <ProjectGuid>{6D5732A8-87F1-4A67-A250-B860F10D3CEB}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Viweer</RootNamespace>
-    <AssemblyName>Viweer</AssemblyName>
+    <RootNamespace>MoveFileFromOldDepotToNew</RootNamespace>
+    <AssemblyName>MoveFileFromOldDepotToNew</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -94,9 +94,17 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ContentManagerCore\ContentManagerCore.csproj">
+      <Project>{0b5a8b6f-d068-4846-a942-c86a8a41ce8f}</Project>
+      <Name>ContentManagerCore</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DbInterface\DbHelper.csproj">
       <Project>{47e3530a-ea57-4ff2-9a5e-bd193f853493}</Project>
       <Name>DbHelper</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MpvUtilities\MpvUtilities.csproj">
+      <Project>{92d45275-0e7e-4ffe-bed5-919ec987315d}</Project>
+      <Name>MpvUtilities</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

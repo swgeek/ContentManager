@@ -75,19 +75,38 @@ namespace RenameObjectFileWithExtension
                     {
                         string dirNameOnly = System.IO.Path.GetFileName(directory);
                         string matchingFileInfoDir = System.IO.Path.Combine(fileInfoDirName, dirNameOnly);
-                        ProcessFilesFromDir(directory, matchingFileInfoDir, logsDirName);
+                        ProcessFilesFromDir(directory, logsDirName);
                         statusTextBlock.Text = directory + " done";
                     }
 
                     string logfileName = System.IO.Path.Combine(logsDirName, "finished.txt");
-                    File.WriteAllText(logfileName, directoryList.Length.ToString() + " directories copied, FINISHED!");
+                    File.WriteAllText(logfileName, directoryList.Length.ToString() + " directories done, FINISHED!");
                     statusTextBlock.Text = "FINISHED!";
                 }
             }
         }
 
+        // temporary, just to undo the file rename, i.e. remove extension
+        private void ProcessFilesFromDir(string objectStoreDirName, string logsDirName)
+        {
+            string[] fileList = Directory.GetFiles(objectStoreDirName);
 
-        private void ProcessFilesFromDir(string objectStoreDirName, string fileInfoDirName, string logsDirName)
+            foreach (string filename in fileList)
+            {
+                string filenameWithoutExtension = System.IO.Path.GetFileNameWithoutExtension(filename);
+
+                string newFilePath = System.IO.Path.Combine(objectStoreDirName, filenameWithoutExtension);
+                if (File.Exists(filename) && (!File.Exists(newFilePath)))
+                    File.Move(filename, newFilePath);
+            }
+
+            // log results
+            string sourceDirNameOnly = System.IO.Path.GetFileName(objectStoreDirName);
+            string logfileName = System.IO.Path.Combine(logsDirName, sourceDirNameOnly + ".txt");
+            File.WriteAllText(logfileName, fileList.Length.ToString() + " files processed from " + sourceDirNameOnly);
+        }
+
+        private void ProcessFilesFromDirOriginal(string objectStoreDirName, string fileInfoDirName, string logsDirName)
         {
             string[] fileList = Directory.GetFiles(fileInfoDirName);
 
