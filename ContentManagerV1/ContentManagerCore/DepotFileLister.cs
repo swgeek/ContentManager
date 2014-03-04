@@ -154,7 +154,21 @@ namespace ContentManagerCore
         public static DirListing GetDirListing(string originalPath, string depotRootPath)
         {
             string dirInfoPath = DepotPathUtilities.GetExistingXmlDirectoryInfoFileName(originalPath, depotRootPath);
-            XDocument dirXml = XDocument.Load(dirInfoPath);
+
+            if ( (dirInfoPath == null) || ( !File.Exists(dirInfoPath)) )
+            {
+                return null;
+            }
+
+            XDocument dirXml = null;
+            try
+            {
+                dirXml = XDocument.Load(dirInfoPath);
+            }
+            catch
+            {
+                return null;
+            }
 
             DirListing listing = new DirListing(originalPath);
 

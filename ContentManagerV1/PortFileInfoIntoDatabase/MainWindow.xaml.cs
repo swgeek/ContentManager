@@ -15,6 +15,8 @@ namespace PortFileInfoIntoDatabase
     {
         DbHelper databaseHelper = null;
         int filecount = 0;
+        int errors = 0;
+        string errorDir = null;
         Stopwatch watch = new Stopwatch();
 
         public MainWindow()
@@ -53,6 +55,7 @@ namespace PortFileInfoIntoDatabase
 
             if (Directory.Exists(fileInfoDirName) && Directory.Exists(logsDirName))
             {
+                errorDir = System.IO.Path.Combine(fileInfoDirName, "errorFiles");
                 string[] directoryList = Directory.GetDirectories(fileInfoDirName);
 
                 foreach (string directory in directoryList)
@@ -65,10 +68,12 @@ namespace PortFileInfoIntoDatabase
 
                 string logfileName = System.IO.Path.Combine(logsDirName, "finished.txt");
                 string logText = directoryList.Length.ToString() + " directories with " + filecount + " processed, FINISHED!" + Environment.NewLine;
+                logText += "From: " + fileInfoDirName + Environment.NewLine;
                 logText += "Files added to database: " + databaseHelper.NumOfNewFiles + Environment.NewLine;
                 logText += "directory mappings added to database: " + databaseHelper.NumOfNewDirectoryMappings + Environment.NewLine;
                 logText += "Files not added as already in database: " + databaseHelper.NumOfDuplicateFiles + Environment.NewLine;
                 logText += "dirs not added as already in database: " + databaseHelper.NumOfDuplicateDirectoryMappings + Environment.NewLine;
+                logText += "errors: " + errors + Environment.NewLine;
                 File.WriteAllText(logfileName, logText);
                 statusTextBlock.Text = "FINISHED!";
             }
@@ -99,7 +104,22 @@ namespace PortFileInfoIntoDatabase
                 if (System.IO.Path.GetExtension(filename).ToLower() != ".xml")
                     continue;
 
-                XDocument xdoc = XDocument.Load(filename);
+                XDocument xdoc = null ;
+                try
+                {
+                    xdoc = XDocument.Load(filename);
+                }
+                catch
+                {
+                    if (!Directory.Exists(errorDir))
+                        Directory.CreateDirectory(errorDir);
+                    
+                    string filenameOnly = System.IO.Path.GetFileName(filename);
+                    string newFilename = System.IO.Path.Combine(errorDir, filenameOnly);
+                    File.Move(filename, newFilename);
+                    errors++;
+                    continue;
+                }
 
                 XElement fileElement = xdoc.Root;
 
@@ -128,26 +148,17 @@ namespace PortFileInfoIntoDatabase
 
                 //string status = "todo"; // fileElement.Attribute("Status").Value.ToString();
 
-                if (filesize != -1)
-                { 
-                    StartTimer("Check if file in database");
-                    bool exists = databaseHelper.FileAlreadyInDatabase(hashValue, filesize);
-                    StopTimer();
+                StartTimer("Check if file in database");
+                bool exists = databaseHelper.FileAlreadyInDatabase(hashValue, filesize);
+                StopTimer();
 
-                    if (!exists)
-                    {
-                        StartTimer("insert file");
-                        databaseHelper.AddFile(hashValue, filesize);
-                        StopTimer();
-                    }
-                }
-                else
+                if (!exists)
                 {
-                    // unknown filesize. Damn. Not sure what to do here, file better already be in database.
-                    bool exists = databaseHelper.FileAlreadyInDatabaseUnknownSize(hashValue);
-                    if (!exists)
-                        throw new Exception("filesize unknown and file not in database");
+                    StartTimer("insert file");
+                    databaseHelper.AddFile(hashValue, filesize);
+                    StopTimer();
                 }
+
 
                 var elements = xdoc.Root.Elements("NodeInfo");
                 foreach (XElement element in elements)
@@ -160,7 +171,7 @@ namespace PortFileInfoIntoDatabase
                     if (!alreadyExists)
                     {
                         StartTimer("insert file directory mapping");
-                        databaseHelper.AddFileDirectoryLocation(hashValue, objectFileOriginalPath);
+                        databaseHelper.AddFileDirectoryLocationOld(hashValue, objectFileOriginalPath);
                         StopTimer();
                     }
                 }

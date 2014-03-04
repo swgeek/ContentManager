@@ -9,6 +9,7 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="*" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
@@ -22,12 +23,15 @@
         <Button Margin="10" Click="OnDestDirectoryButtonClick" Grid.Row="1" Grid.Column="0" Content="destination objectstore"/>
         <TextBlock Margin="10" Name="destDirectoryTextBlock" Grid.Row="1"  Grid.Column="1" />
 
-        <Button Margin="10" Click="OnLogsDirectoryButtonClick" Grid.Row="2" Grid.Column="0">Logs Directory</Button>
-        <TextBlock Margin="10" Name="logsDirectoryTextBlock"  Grid.Row="2"  Grid.Column="1" />
+        <Button Margin="10" Click="OnfileinfoDirectoryButtonClick" Grid.Row="2" Grid.Column="0" Content="destination fileinfo"/>
+        <TextBlock Margin="10" Name="fileinfoDirectoryTextBlock" Grid.Row="2"  Grid.Column="1" />
 
-        <Button Name="ProcessFiles" Margin="10" Grid.ColumnSpan="2" Background="GreenYellow" Content="Process Files" Grid.Row="3" 
+        <Button Margin="10" Click="OnLogsDirectoryButtonClick" Grid.Row="3" Grid.Column="0">Logs Directory</Button>
+        <TextBlock Margin="10" Name="logsDirectoryTextBlock"  Grid.Row="3"  Grid.Column="1" />
+
+        <Button Name="ProcessFiles" Margin="10" Grid.ColumnSpan="2" Background="GreenYellow" Content="Process Files" Grid.Row="4" 
                 Grid.Column="0" Click="OnProcessFilesButtonClick" />
 
-        <TextBlock Margin="10" Name="statusTextBlock"  Grid.Row="4"  Grid.Column="1" />
+        <TextBlock Margin="10" Name="statusTextBlock"  Grid.Row="5"  Grid.Column="1" />
     </Grid>
 </Window>

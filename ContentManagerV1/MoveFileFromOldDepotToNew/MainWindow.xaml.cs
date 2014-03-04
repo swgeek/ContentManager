@@ -14,6 +14,7 @@ namespace MoveFileFromOldDepotToNew
     {
         DbHelper databaseHelper = null;
         int filesMoved = 0;
+        int xmlFilesMoved = 0;
         int filesAlreadyInStore = 0;
         int fileCount = 0;
 
@@ -39,6 +40,13 @@ namespace MoveFileFromOldDepotToNew
                 destDirectoryTextBlock.Text = dirname;
         }
 
+        private void OnfileinfoDirectoryButtonClick(object sender, RoutedEventArgs e)
+        {
+            string dirname = FilePickerUtility.PickDirectory();
+            if ((dirname != null) && (dirname != String.Empty))
+                fileinfoDirectoryTextBlock.Text = dirname;
+
+        }
         private void OnLogsDirectoryButtonClick(object sender, RoutedEventArgs e)
         {
             string dirname = FilePickerUtility.PickDirectory();
@@ -51,12 +59,13 @@ namespace MoveFileFromOldDepotToNew
             databaseHelper.OpenConnection();
             string sourceDirectory = sourceDirectoryTextBlock.Text;
             string destDirectory = destDirectoryTextBlock.Text;
+            string fileinfoDirectory = fileinfoDirectoryTextBlock.Text;
             string logsDirName = logsDirectoryTextBlock.Text;
 
-            if (sourceDirectory == String.Empty || destDirectory == String.Empty || logsDirName == String.Empty)
+            if (sourceDirectory == String.Empty || destDirectory == String.Empty || fileinfoDirectory == String.Empty || logsDirName == String.Empty) 
                 return;
 
-            if (Directory.Exists(sourceDirectory) && Directory.Exists(destDirectory) && Directory.Exists(logsDirName))
+            if (Directory.Exists(sourceDirectory) && Directory.Exists(destDirectory) && Directory.Exists(fileinfoDirectory) && Directory.Exists(logsDirName))
             {
                 databaseHelper.CheckObjectStoreExistsAndInsertIfNot(destDirectory);
 
@@ -65,7 +74,7 @@ namespace MoveFileFromOldDepotToNew
                 foreach (string directory in directoryList)
                 {
                     
-                    ProcessFilesFromDir(directory, destDirectory, logsDirName);
+                    ProcessFilesFromDir(directory, destDirectory, fileinfoDirectory, logsDirName);
                     statusTextBlock.Text = directory + " done";
                 }
 
@@ -73,23 +82,34 @@ namespace MoveFileFromOldDepotToNew
 
                 string logfileName = System.IO.Path.Combine(logsDirName, "finished.txt");
                 string logText = directoryList.Length.ToString() + " directories with " + fileCount + " processed, FINISHED!" + Environment.NewLine;
+                logText += "From: " + sourceDirectory + Environment.NewLine;
                 logText += "Files moved: " + filesMoved + Environment.NewLine;
                 logText += "Files not moved as already in object store: " + filesAlreadyInStore + Environment.NewLine;
                 logText += "Files added to database: " + databaseHelper.NumOfNewFiles + Environment.NewLine;
                 logText += "Files not added as already in database: " + databaseHelper.NumOfDuplicateFiles + Environment.NewLine;
                 logText += "file locations added to database: " + databaseHelper.NumOfNewFileLocations + Environment.NewLine;
                 logText += "locations not added as already in database: " + databaseHelper.NumOfDuplicateFileLocations + Environment.NewLine;
+                logText += "fileinfo xml files found: " + xmlFilesMoved.ToString() + Environment.NewLine;
                 File.WriteAllText(logfileName, logText);
                 statusTextBlock.Text = "FINISHED!";
             }
         }
 
-        private void ProcessFilesFromDir(string sourceSubDir, string objectStoreRoot, string logsDirName)
+        private void ProcessFilesFromDir(string sourceSubDir, string objectStoreRoot, string fileinfoDir, string logsDirName)
         {
             string[] fileList = Directory.GetFiles(sourceSubDir);
 
             foreach (string filePath in fileList)
             {
+                if (System.IO.Path.GetExtension(filePath).ToLower().Equals(".xml"))
+                {
+                    // file info, not object file
+                    string newFilePath = DepotPathUtilities.GetXmFileInfoPath(fileinfoDir, filePath);
+                    CMXmlUtilities.MoveOrMergeXmlFiles(filePath, newFilePath);
+                    xmlFilesMoved++;
+                    continue;
+                }
+
                 FileInfo fileInfo = new FileInfo(filePath);
                 long filesize = fileInfo.Length;
                 string fileName = fileInfo.Name;
@@ -111,13 +131,12 @@ namespace MoveFileFromOldDepotToNew
                 }
 
                 bool exists = databaseHelper.FileAlreadyInDatabase(fileName, filesize);
- 
+
                 if (!exists)
                 {
                     databaseHelper.AddFile(fileName, filesize);
                 }
 
-                // add file location to database
                 databaseHelper.AddFileLocation(fileName, objectStoreRoot);
             }
 
@@ -127,5 +146,7 @@ namespace MoveFileFromOldDepotToNew
             File.WriteAllText(logfileName, fileList.Length.ToString() + " files processed from " + sourceDirNameOnly);
             fileCount += fileList.Length;
         }
+
+
     }
 }

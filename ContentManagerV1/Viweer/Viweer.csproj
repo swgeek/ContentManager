@@ -94,9 +94,17 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ContentManagerCore\ContentManagerCore.csproj">
+      <Project>{0b5a8b6f-d068-4846-a942-c86a8a41ce8f}</Project>
+      <Name>ContentManagerCore</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DbInterface\DbHelper.csproj">
       <Project>{47e3530a-ea57-4ff2-9a5e-bd193f853493}</Project>
       <Name>DbHelper</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MpvUtilities\MpvUtilities.csproj">
+      <Project>{92d45275-0e7e-4ffe-bed5-919ec987315d}</Project>
+      <Name>MpvUtilities</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

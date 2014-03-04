@@ -27,6 +27,8 @@ namespace PortDirInfoIntoDb
     {
         DbHelper databaseHelper = null;
         Stopwatch watch = new Stopwatch();
+        int errors = 0;
+        string errorString = "";
 
         public MainWindow()
         {
@@ -54,6 +56,7 @@ namespace PortDirInfoIntoDb
         private void OnProcessFilesButtonClick(object sender, RoutedEventArgs e)
         {
             databaseHelper.OpenConnection();
+
 
             string depotRoot = depotRootDirectoryTextBlock.Text;
             string logsDirName = logsDirectoryTextBlock.Text;
@@ -84,6 +87,8 @@ namespace PortDirInfoIntoDb
             logText += "subdir mappings not added as already in database: " + databaseHelper.NumOfDuplicateDirSubDirMappings + Environment.NewLine;
             logText += "fir dir mappings added to database: " + databaseHelper.NumOfNewDirectoryMappings + Environment.NewLine;
             logText += "file dir mappings not added as already in database: " + databaseHelper.NumOfDuplicateDirectoryMappings + Environment.NewLine;
+            logText += "errors: " + errors.ToString() + Environment.NewLine;
+            logText += "errors detail: " + Environment.NewLine + errorString + Environment.NewLine;
 
             File.WriteAllText(logfileName, logText);
             statusTextBlock.Text = "FINISHED!";
@@ -100,6 +105,14 @@ namespace PortDirInfoIntoDb
             }
 
             DirListing listing = ContentManagerCore.DepotFileLister.GetDirListing(dirPath, depotRoot);
+
+            if (listing == null)
+            {
+                // crap, error, xml file probably does not exist. Big problem here...
+                errors++;
+                errorString += dirPath + Environment.NewLine;
+                return;
+            }
 
             // find subdirectories, add each one to list + add  mapping for each one
             foreach (string directory in listing.Directories)

@@ -58,7 +58,9 @@ namespace ContentManagerCore
 
             string fullPath =  System.IO.Path.Combine(dirName, hashValue + ".xml");
             if (!File.Exists(fullPath))
-                throw new Exception(fullPath + "does not exist!");
+            {
+                return null;
+            }
 
             return fullPath;
         }
@@ -99,5 +101,17 @@ namespace ContentManagerCore
             }
             return System.IO.Path.Combine(subDirPath, filename);
         }
+
+        static public string GetExistingFilePath(string objectStoreRoot, string hashValue)
+        {
+            string subDirName = hashValue.Substring(0, 2);
+            string fullPath = System.IO.Path.Combine(objectStoreRoot, subDirName, hashValue);
+            if (File.Exists(fullPath))
+                return fullPath;
+            else
+                return null;
+        }
+
+
     }
 }

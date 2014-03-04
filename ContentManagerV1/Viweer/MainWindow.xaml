@@ -1,15 +1,56 @@
 ﻿<Window x:Class="Viweer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Height="350" Width="525">
+        Title="MainWindow" Height="350" Width="525"
+        Closing="Window_Closing">
+
     <Grid>
-        <ListView ItemsSource="{Binding}" x:Name="fileList" SelectionChanged="fileList_SelectionChanged">
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="2*" />
+        </Grid.ColumnDefinitions>
+   
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <ListView Margin="5"  ItemsSource="{Binding}" x:Name="fileList" SelectionChanged="fileList_SelectionChanged">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Width="42" Header="hash" DisplayMemberBinding="{Binding Path=hash}" />
-                    <GridViewColumn Width="42" Header="filesize" DisplayMemberBinding="{Binding Path=filesize}" />
                 </GridView>
             </ListView.View>
         </ListView>
+
+        <ListView Margin="5"  Grid.Column="1" ItemsSource="{Binding}" x:Name="dirList" SelectionChanged="dirList_SelectionChanged">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Width="200" Header="directoryPath" DisplayMemberBinding="{Binding Path=dirPath}" />
+                    <GridViewColumn Width="200" Header="filename" DisplayMemberBinding="{Binding Path=filename}" />
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <ListView Margin="5"  Grid.Column="2" ItemsSource="{Binding}" x:Name="otherFilesInDir">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Width="200" Header="FilesInDir" DisplayMemberBinding="{Binding Path=filename}" />
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <TextBlock Margin="5"  Name="filenameTextBlock" Text="No Selection Made"  Grid.Row="1" />
+        <Button Margin="5" Content="Extract selected file" Click="OnExtractFile" Grid.Row="2" />
+        <Button Margin="5" Content="Extract all files from directory" Click="OnExtractDir" Grid.Row="2" Grid.Column="1"/>
+        <Button Margin="5" Content="delete selected file" Click="OnDeleteFile" Grid.Row="3" />
+
+        <Button Margin="5" Click="OnExtractDirButtonClick" Grid.Row="4" Grid.Column="1">destination folder</Button>
+        <TextBlock Margin="5" Name="extractDirectoryTextBlock"  Grid.Row="4"  Grid.Column="2" />
+
     </Grid>
 </Window>
