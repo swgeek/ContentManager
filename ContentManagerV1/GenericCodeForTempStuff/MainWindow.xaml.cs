@@ -64,10 +64,13 @@ namespace GenericCodeForTempStuff
 
                 foreach (string filePath in filelist)
                 {
-                    string hashValue = System.IO.Path.GetFileNameWithoutExtension(filePath);
-                    string originalFile = ContentManagerCore.DepotPathUtilities.GetObjectFileXmlPath(dir2, hashValue);
-                    string newPath = System.IO.Path.Combine(dir3, System.IO.Path.GetFileName(originalFile));
-                    File.Copy(originalFile, newPath);
+                    string filename = System.IO.Path.GetFileName(filePath);
+                    string newPath = System.IO.Path.Combine(dir2, filename);
+                    File.Move(filePath, newPath);
+                    //string hashValue = System.IO.Path.GetFileNameWithoutExtension(filePath);
+                    //string originalFile = ContentManagerCore.DepotPathUtilities.GetObjectFileXmlPath(dir2, hashValue);
+                    //string newPath = System.IO.Path.Combine(dir3, System.IO.Path.GetFileName(originalFile));
+                    //File.Copy(originalFile, newPath);
                 }
             }
         }

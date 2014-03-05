@@ -1,0 +1,31 @@
+﻿<Window x:Class="ManageStoreLocations.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="350" Width="525"
+        Closing="Window_Closing">
+    <Grid>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ListView Margin="5"  Grid.ColumnSpan="2" ItemsSource="{Binding}" x:Name="objectStores" SelectionChanged="objectStore_SelectionChanged">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Width="200" Header="id" DisplayMemberBinding="{Binding Path=id}" />
+                    <GridViewColumn Width="200" Header="path" DisplayMemberBinding="{Binding Path=dirPath}" />
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <TextBlock Name="idTextBlock" Grid.Row="1" Grid.Column="0" />
+        <TextBlock Name="pathTextBlock" Grid.Row="1" Grid.Column="1" />
+        <Button Margin="5" Content="update" Click="updateButton_Click" Grid.Row="2" />
+    </Grid>
+</Window>

@@ -1,23 +1,14 @@
-﻿using System;
+﻿using ContentManagerCore;
+using DbInterface;
+using MpvUtilities;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Data;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using DbInterface;
-using System.Data;
-using System.IO;
-using ContentManagerCore;
-using MpvUtilities;
-using System.Diagnostics;
 
 namespace Viweer
 {
@@ -40,13 +31,17 @@ namespace Viweer
 
             databaseHelper.OpenConnection();
 
-            DataSet fileData = databaseHelper.TryThis();
+           //DataSet fileData = databaseHelper.GetLargestFilesTodo(30);
+            DataSet fileData = databaseHelper.GetListOfFilesWithExtensionMatchingSearchString(".mp3", "salsa");
             fileList.DataContext = fileData.Tables[0].DefaultView;
 
         }
 
         private void fileList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (e.AddedItems.Count == 0)
+                return;
+
             var selectedItem = e.AddedItems[0];
             Console.WriteLine(selectedItem.ToString());
             DataRowView trythis = selectedItem as DataRowView;
@@ -72,6 +67,9 @@ namespace Viweer
 
         private void dirList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (e.AddedItems.Count == 0)
+                return;
+
             var selectedItem = e.AddedItems[0];
             Console.WriteLine(selectedItem.ToString());
             DataRowView trythis = selectedItem as DataRowView;
@@ -86,7 +84,11 @@ namespace Viweer
             //    Console.WriteLine(dirListData.Tables[0].Rows[i][0].ToString());
             //}
 
-            otherFilesInDir.DataContext = dirListData.Tables[0].DefaultView;
+            filesInDir.DataContext = dirListData.Tables[0].DefaultView;
+
+            DataSet subdirListData = databaseHelper.GetListOfSubdirectoriesInOriginalDirectory(value);
+
+            subdirsInDir.DataContext = subdirListData.Tables[0].DefaultView;
 
         }
 
@@ -95,19 +97,14 @@ namespace Viweer
             databaseHelper.CloseConnection();
         }
 
-        private void OnExtractFile(object sender, RoutedEventArgs e)
+        private void ExtractFile(string fileHash, string filename, string destinationDir)
         {
-            if (extractDirectoryTextBlock.Text == String.Empty)
-                return;
-
-            string filename = filenameTextBlock.Text;
-
-            List<string> locations = databaseHelper.GetFileLocationPaths(currentFileHash);
+            List<string> locations = databaseHelper.GetFileLocationPaths(fileHash);
 
             string filePath = null;
-            foreach(string location in locations)
+            foreach (string location in locations)
             {
-                filePath = DepotPathUtilities.GetExistingFilePath(location, currentFileHash);
+                filePath = DepotPathUtilities.GetExistingFilePath(location, fileHash);
                 if (filePath != null)
                     break;
             }
@@ -118,11 +115,34 @@ namespace Viweer
             }
             else
             {
-                string newPath = System.IO.Path.Combine(extractDirectoryTextBlock.Text, filename);
-               // File.Copy(filePath, newPath);
-                Process.Start(extractDirectoryTextBlock.Text);
-
+                string newPath = System.IO.Path.Combine(destinationDir, filename);
+                if (! File.Exists(newPath))
+                    File.Copy(filePath, newPath);
             }
+
+        }
+
+        private void OnExtractFile(object sender, RoutedEventArgs e)
+        {
+            if (extractDirectoryTextBlock.Text == String.Empty)
+                return;
+
+            string destinationDir = extractDirectoryTextBlock.Text;
+
+            if (!Directory.Exists(destinationDir))
+                return;
+
+            foreach (var selectedItem in fileList.SelectedItems)
+            {
+                Console.WriteLine(selectedItem);
+                DataRowView trythis = selectedItem as DataRowView;
+                string filehash = trythis.Row.ItemArray[0] as string;
+                string filename = trythis.Row.ItemArray[1] as string;
+                Console.WriteLine(filehash + ", " + filename);
+                ExtractFile(filehash, filename, destinationDir);
+            }
+
+            Process.Start(extractDirectoryTextBlock.Text);
         }
 
         private void OnExtractDir(object sender, RoutedEventArgs e)
@@ -146,11 +166,21 @@ namespace Viweer
             currentFileHash = null;
             filenameTextBlock.Text = String.Empty;
 
-            otherFilesInDir.DataContext = null;
+            filesInDir.DataContext = null;
             dirList.DataContext = null;
             fileList.Items.Refresh();
             // clear directory list
             // reset file list
+        }
+
+        private void OnDeleteDir(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void OnExtractAllButtonClick(object sender, RoutedEventArgs e)
+        {
+
         }
 
     }

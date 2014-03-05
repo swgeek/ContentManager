@@ -150,7 +150,8 @@ namespace AddFilesV2
                 }
                 // always add directory info even if file is in db already, as may be a different copy and name
 
-                databaseHelper.AddFileDirectoryLocationOld(hashValue, filePath);
+                // check this is correct call, have made some changes
+                databaseHelper.AddOriginalFileLocation(hashValue, filePath);
             });
         }
 

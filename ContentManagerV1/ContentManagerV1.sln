@@ -64,6 +64,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoveFileFromOldDepotToNew",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenericCodeForTempStuff", "GenericCodeForTempStuff\GenericCodeForTempStuff.csproj", "{37C8A18D-C48C-4D00-8052-192241F9DCDF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoveFilesOfAType", "MoveFilesOfAType\MoveFilesOfAType.csproj", "{C2E9EF4C-6029-4098-8589-FCC190442FCA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManageStoreLocations", "ManageStoreLocations\ManageStoreLocations.csproj", "{05DBFA4D-A954-4EB0-82D7-82B2424BCFA9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -166,13 +170,22 @@ Global
 		{37C8A18D-C48C-4D00-8052-192241F9DCDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{37C8A18D-C48C-4D00-8052-192241F9DCDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{37C8A18D-C48C-4D00-8052-192241F9DCDF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2E9EF4C-6029-4098-8589-FCC190442FCA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2E9EF4C-6029-4098-8589-FCC190442FCA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2E9EF4C-6029-4098-8589-FCC190442FCA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2E9EF4C-6029-4098-8589-FCC190442FCA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05DBFA4D-A954-4EB0-82D7-82B2424BCFA9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05DBFA4D-A954-4EB0-82D7-82B2424BCFA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05DBFA4D-A954-4EB0-82D7-82B2424BCFA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05DBFA4D-A954-4EB0-82D7-82B2424BCFA9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{68E2038D-380C-44BF-BCE7-C0BAC9AD75F6} = {E789423A-A9E5-4492-9358-68B909B01811}
 		{F40EEEE2-F41D-4793-BE98-89D00B4D0C92} = {E789423A-A9E5-4492-9358-68B909B01811}
+		{68E2038D-380C-44BF-BCE7-C0BAC9AD75F6} = {E789423A-A9E5-4492-9358-68B909B01811}
 		{B67595E8-4272-46FC-8708-BA54DF3F891A} = {E789423A-A9E5-4492-9358-68B909B01811}
+		{F7C619FC-462A-4E3E-BBEB-69BB0CE341AE} = {E789423A-A9E5-4492-9358-68B909B01811}
 	EndGlobalSection
 EndGlobal

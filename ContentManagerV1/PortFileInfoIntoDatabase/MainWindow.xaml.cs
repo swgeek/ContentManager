@@ -171,7 +171,8 @@ namespace PortFileInfoIntoDatabase
                     if (!alreadyExists)
                     {
                         StartTimer("insert file directory mapping");
-                        databaseHelper.AddFileDirectoryLocationOld(hashValue, objectFileOriginalPath);
+                        // check this is correct call, have changed code a bit
+                        databaseHelper.AddOriginalFileLocation(hashValue, objectFileOriginalPath);
                         StopTimer();
                     }
                 }

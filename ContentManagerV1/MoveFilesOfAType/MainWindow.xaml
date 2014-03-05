@@ -1,0 +1,31 @@
+﻿<Window x:Class="MoveFilesOfAType.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="350" Width="525">
+    <!-- this seems to be a common pattern in this solution, maybe abstract out into a control? -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="2*" />
+        </Grid.ColumnDefinitions>
+
+        <Button Margin="10" Click="sourceDirButtonClick" Grid.Row="0" Grid.Column="0">source object store</Button>
+        <TextBlock Margin="10" Name="sourceDirTextBlock" Grid.Row="0"  Grid.Column="1" />
+
+        <Button Margin="10" Click="destDirButtonClick" Grid.Row="1" Grid.Column="0">destination object store</Button>
+        <TextBlock Margin="10" Name="destDirTextBlock" Grid.Row="1"  Grid.Column="1" />
+
+        <Button Name="processButton" Margin="10" Grid.ColumnSpan="2" Background="GreenYellow" Content="Process" Grid.Row="3" Grid.Column="0"
+                Click="OnProcess" />
+
+        <TextBlock Margin="10" Name="statusTextBlock"  Grid.Row="4"  Grid.Column="1" />
+    </Grid>
+</Window>
