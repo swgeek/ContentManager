@@ -68,6 +68,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoveFilesOfAType", "MoveFil
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManageStoreLocations", "ManageStoreLocations\ManageStoreLocations.csproj", "{05DBFA4D-A954-4EB0-82D7-82B2424BCFA9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RandomTasksUI", "RandomTasksUI\RandomTasksUI.csproj", "{03897BF3-E666-4948-A9CA-F180A24F7B55}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reports", "Reports\Reports.csproj", "{58763EA3-2B12-4D99-8D07-CF5FDB692F71}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -178,6 +182,14 @@ Global
 		{05DBFA4D-A954-4EB0-82D7-82B2424BCFA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{05DBFA4D-A954-4EB0-82D7-82B2424BCFA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{05DBFA4D-A954-4EB0-82D7-82B2424BCFA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03897BF3-E666-4948-A9CA-F180A24F7B55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03897BF3-E666-4948-A9CA-F180A24F7B55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03897BF3-E666-4948-A9CA-F180A24F7B55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03897BF3-E666-4948-A9CA-F180A24F7B55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58763EA3-2B12-4D99-8D07-CF5FDB692F71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58763EA3-2B12-4D99-8D07-CF5FDB692F71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58763EA3-2B12-4D99-8D07-CF5FDB692F71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58763EA3-2B12-4D99-8D07-CF5FDB692F71}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

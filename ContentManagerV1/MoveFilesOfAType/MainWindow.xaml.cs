@@ -51,7 +51,7 @@ namespace MoveFilesOfAType
 
             if (Directory.Exists(sourceDir) && Directory.Exists(destDir))
             {
-                DataTable tableOfFiles = databaseHelper.GetListOfFilesWithExtensionInOneObjectStore(".psd", sourceDir);
+                DataTable tableOfFiles = databaseHelper.GetListOfFilesWithExtensionInOneObjectStore(".jpg", sourceDir);
 
                 if (tableOfFiles.Rows.Count == 0)
                     return;

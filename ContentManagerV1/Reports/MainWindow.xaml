@@ -1,0 +1,29 @@
+﻿<Window x:Class="Reports.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="350" Width="525">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="3*" />
+        </Grid.ColumnDefinitions>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Button Margin="5" Content="Report totals" Click="reportTotalsButton_Click" />
+
+            <Button Grid.Row="1" Margin="5" Content="Report extension list" Click="extensionListButton_Click" />
+
+            <Button Grid.Row="4" Margin="5" Content="save report" Click="saveButton_Click" />
+        </Grid>
+
+        <TextBox Grid.Column="1" Margin="5" Name="outputTextBox" />
+    </Grid>
+</Window>

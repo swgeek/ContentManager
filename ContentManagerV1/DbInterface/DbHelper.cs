@@ -34,6 +34,7 @@ namespace DbInterface
         private const string OldOriginalDirectoriesForFileTable = "OriginalDirectoriesForFileV2";
         private const string OriginalDirectoriesTable = "originalDirectoriesV2";
         private const string ObjectStoresTable = "objectStores";
+        private const string FileLocationsTable = "fileLocations";
 
         public DbHelper(string databaseFilePathName)
         {
@@ -62,8 +63,11 @@ namespace DbInterface
         {
             db.OpenConnection();
 
-            string createTableSqlString = "create table originalRootDirectories (rootdir char(500) PRIMARY KEY);";
-            db.ExecuteNonQuerySql(createTableSqlString);
+            string createTableCommand = "create table FilesV2 (filehash char(40) PRIMARY KEY, filesize int, status varchar(60));";
+            db.ExecuteNonQuerySql(createTableCommand);
+
+            string transferDataCommand = "insert into FilesV2 (filehash, filesize, status) select hash, filesize, status from Files;";
+            db.ExecuteNonQuerySql(transferDataCommand);
 
             db.CloseConnection();
         }
@@ -73,20 +77,33 @@ namespace DbInterface
         {
             db.OpenConnection();
 
-            // create Table
-            string createCommand = "create table FilesV2 (filehash char(40) PRIMARY KEY, filesize int, status varchar(60))";
-            db.ExecuteNonQuerySql(createCommand);
+            // create Tables
+            string createTableCommand = "create table fileLocation1 (filehash char(40) PRIMARY KEY, locationId int);";
+            db.ExecuteNonQuerySql(createTableCommand);
+
+            createTableCommand = "create table fileLocation2 (filehash char(40) PRIMARY KEY, locationId int);";
+            db.ExecuteNonQuerySql(createTableCommand);
+
+            createTableCommand = "create table fileLocation3 (filehash char(40) PRIMARY KEY, locationId int);";
+            db.ExecuteNonQuerySql(createTableCommand);
 
             // move data from old to new
-            string copyDataCommand = "insert into FilesV2 (filehash, filesize, status) select hash, filesize, status from Files";
+            string copyDataCommand = "insert into fileLocation1 (filehash, locationId) select filehash, objectStore1 from fileLocations " +
+                " where objectStore1 is not null;";
             db.ExecuteNonQuerySql(copyDataCommand);
+
+            copyDataCommand = "insert into fileLocation2 (filehash, locationId) select filehash, objectStore2 from fileLocations " +
+                " where objectStore2 is not null;";
+            db.ExecuteNonQuerySql(copyDataCommand);
+
+            // nothing in 3 yet, no need to transfer
 
             db.CloseConnection();
         }
 
         public void AddFile(string hash, long filesize)
         {
-            string commandString = string.Format("insert into files (hash, filesize, status) values (\"{0}\", {1}, \"todo\")", hash, filesize);
+            string commandString = string.Format("insert into {0} (filehash, filesize, status) values (\"{1}\", {2}, \"todo\")",FilesTable, hash, filesize);
             db.ExecuteNonQuerySql(commandString);
             NumOfNewFiles++;
         }
@@ -96,7 +113,7 @@ namespace DbInterface
             bool exists = false;
 
             // probably not optimal, but get it working, find best way later.
-            string commandString = String.Format("select filesize from files where hash = \"{0}\"", hash);
+            string commandString = String.Format("select filesize from {0} where filehash = \"{1}\"", FilesTable, hash);
             SQLiteDataReader reader = db.GetDataReaderForSqlQuery(commandString);
             while (reader.Read())
             {  
@@ -107,7 +124,7 @@ namespace DbInterface
                     if (filesizeFromDb == -1)
                     {
                         // filesize was previously unknown, update db
-                        string updateFilesizeSql = String.Format("update Files set filesize = {0} where filehash = \"{1}\"; ", filesize, hash);
+                        string updateFilesizeSql = String.Format("update {0} set filesize = {1} where filehash = \"{2}\"; ", FilesTable, filesize, hash);
                         db.ExecuteNonQuerySql(updateFilesizeSql);
                     }
                     else
@@ -135,19 +152,25 @@ namespace DbInterface
             return exists;
         }
 
-        public bool FileDirectoryLocationExists(string hashValue, string dirPath)
+        public bool FileDirectoryLocationExists(string hashValue, string filePath)
         {
             bool alreadyExists = false;
 
-            // definitely not optimal, but get it working, find best way later.
-            string commandString = String.Format("select * from OriginalDirectoriesForFileV2 where hash = \"{0}\" and directoryPath = \"{1}\"", hashValue, dirPath);
-            SQLiteDataReader reader = db.GetDataReaderForSqlQuery(commandString);
-            while (reader.Read())
-            {
-                alreadyExists = true;
-                NumOfDuplicateDirectoryMappings++;
-                break;
-            }
+            string filename = System.IO.Path.GetFileName(filePath);
+            string directory = System.IO.Path.GetDirectoryName(filePath);
+            string dirHash = SH1HashUtilities.HashString(directory);
+
+            // sanity check, can remove this if need more speed
+            string command = String.Format("select dirPathHash from {0} where dirPath = \"{1}\"", OriginalDirectoriesTable, directory);
+            string dirPathHash = db.ExecuteSqlQueryForSingleString(command);
+
+            if (dirPathHash == null)
+                return false;
+
+            if (! dirPathHash.Equals(dirHash))
+                throw new Exception("hash in table does not match hash of directory path");
+
+            alreadyExists = FileOriginalLocationAlreadyInDatabase(hashValue, filename, dirHash);
 
             return alreadyExists;
         }
@@ -206,30 +229,30 @@ namespace DbInterface
         // for now just two tables, but will be more thorough later on...
         public void RemoveFileCompletely(string filename)
         {
-            string countFileEntriesSql = String.Format( "select count(*) from Files where hash = \"{0}\";", filename);
+            string countFileEntriesSql = String.Format( "select count(*) from {0} where filehash = \"{1}\";",FilesTable, filename);
             int countBefore = (int)db.ExecuteSqlQueryReturningSingleInt(countFileEntriesSql);
             if (countBefore > 0)
             {
-                string deleteFileSql = String.Format("delete from Files where hash = \"{0}\";", filename);
+                string deleteFileSql = String.Format("delete from {0} where filehash = \"{1}\";", FilesTable, filename);
                 db.ExecuteNonQuerySql(deleteFileSql);
                 int countAfter = (int)db.ExecuteSqlQueryReturningSingleInt(countFileEntriesSql);
 
                 if (countAfter < countBefore)
-                    Console.WriteLine("filename + Deleted from Files");
+                    Console.WriteLine(filename + "Deleted from Files");
                 else
                     Console.WriteLine(filename + "not deleted");
             }
 
-            string countLocationEntriesSql = String.Format("select count(*) from fileLocations where filehash = \"{0}\";", filename);
+            string countLocationEntriesSql = String.Format("select count(*) from {0} where filehash = \"{1}\";", FileLocationsTable, filename);
             countBefore = (int)db.ExecuteSqlQueryReturningSingleInt(countLocationEntriesSql);
             if (countBefore > 0)
             {
-                string deleteLocationSql = String.Format("delete from fileLocations where filehash = \"{0}\";", filename);
+                string deleteLocationSql = String.Format("delete from {0} where filehash = \"{1}\";",FileLocationsTable, filename);
                 db.ExecuteNonQuerySql(deleteLocationSql);
                 int countAfter = (int)db.ExecuteSqlQueryReturningSingleInt(countLocationEntriesSql);
 
                 if (countAfter < countBefore)
-                    Console.WriteLine("filename + Deleted from fileLocations");
+                    Console.WriteLine(filename + " Deleted from fileLocations");
                 else
                     Console.WriteLine(filename + "not deleted");
             }
@@ -290,10 +313,74 @@ namespace DbInterface
             return db.GetDatasetForSqlQuery(commandString) ;
         }
 
+        public DataSet GetLargestFiles(int numOfFiles)
+        {
+            string commandString = String.Format("select filehash from {0} order by filesize desc limit {1}", FilesTable, numOfFiles);
+            return db.GetDatasetForSqlQuery(commandString);
+        }
+
+        public DataSet GetFilesFromObjectStore(int objectStoreID)
+        {
+            string commandString = String.Format("select filehash from {0} where objectStore1 = {1} or objectStore2 = {1} or objectStore3 = {1};",
+                FileLocationsTable, objectStoreID);
+            return db.GetDatasetForSqlQuery(commandString);
+        }
+
         public DataSet GetObjectStores()
         {
             string commandString = String.Format("select id, dirPath from {0};", ObjectStoresTable);
             return db.GetDatasetForSqlQuery(commandString);
+        }
+
+        private int? numOfFilesWithOnlyOneLocation(int objectStoreID, string mainField, string secondfield, string thirdField)
+        {
+            // check if any file has specified location in main field but does not have another location
+            string checkLocationcommand = String.Format("select count(*) from {0} where {2} = {1} and " +
+                " {3} is null and {4} is null;", FileLocationsTable, objectStoreID, mainField, secondfield, thirdField);
+            return db.ExecuteSqlQueryReturningSingleInt(checkLocationcommand);
+        }
+
+        public bool DeleteObjectStore(int objectStoreID)
+        {
+            // inefficient to do it in multiple queries. May fix later, get it working first.
+            // also, instead of passing in table names should get from schema. Find out how.
+
+            int? count = numOfFilesWithOnlyOneLocation(objectStoreID, "objectStore1", "objectStore2", "objectStore3");
+
+            // have files where the only location is the specified one, cannot delete that location or will lose track of file
+            if (count != 0)
+                return false;
+
+            count = numOfFilesWithOnlyOneLocation(objectStoreID, "objectStore2", "objectStore1", "objectStore3");
+            if (count != 0)
+                return false;
+
+            count = numOfFilesWithOnlyOneLocation(objectStoreID, "objectStore3", "objectStore1", "objectStore2");
+            if (count != 0)
+                return false;
+
+            // can delete!
+
+            // delete from 1
+            string deleteLocationCommand = String.Format("update {0} set objectStore1 = null where objectStore1 = {1};", 
+                FileLocationsTable, objectStoreID);
+             db.ExecuteNonQuerySql(deleteLocationCommand);
+
+             // delete from 2
+             deleteLocationCommand = String.Format("update {0} set objectStore2 = null where objectStore2 = {1};",
+                FileLocationsTable, objectStoreID);
+             db.ExecuteNonQuerySql(deleteLocationCommand);
+
+             // delete from 3
+             deleteLocationCommand = String.Format("update {0} set objectStore3 = null where objectStore3 = {1};",
+                FileLocationsTable, objectStoreID);
+             db.ExecuteNonQuerySql(deleteLocationCommand);
+
+            // next delete the object store from the object store table
+            string deleteStore = String.Format("delete from {0} where id = {1}", ObjectStoresTable, objectStoreID);
+            db.ExecuteNonQuerySql(deleteStore);
+
+            return true;
         }
 
         public void UpdateObjectStore(int objectStoreId, string newPath)
@@ -304,11 +391,39 @@ namespace DbInterface
 
         }
 
+        public string getFirstFilenameForFile(string filehash)
+        {
+            string commandString = String.Format("select filename from {0} where filehash = \"{1}\" limit 1;",
+                OriginalDirectoriesForFileTable, filehash);
+            return db.ExecuteSqlQueryForSingleString(commandString);
+        }
+
         public DataSet GetOriginalDirectoriesForFile(string fileHash)
         {
             string commandString = String.Format("select dirPath, dirPathHash, filename from {0} join {1} using (dirPathHash) where filehash = \"{2}\" limit 100;", 
                 OriginalDirectoriesForFileTable, OriginalDirectoriesTable, fileHash);
             return db.GetDatasetForSqlQuery(commandString);
+        }
+
+        public string GetDirectoryPathForDirHash(string dirHash)
+        {
+            string commandString = String.Format("select dirPath from {0} where dirPathHash = \"{1}\";", OriginalDirectoriesTable, dirHash);
+            return db.ExecuteSqlQueryForSingleString(commandString);
+        }
+
+        public void DeleteDirectoryAndContents(string dirHash)
+        {
+            // delete files within directory
+            
+            // first delete files
+            string deleteFilesCommand = String.Format("update {0} set status = \"todelete\" where status <> \"deleted\" and " +
+                " filehash in (select filehash from {1} where dirPathHash = \"{2}\");", FilesTable, OriginalDirectoriesForFileTable, dirHash);
+            db.ExecuteNonQuerySql(deleteFilesCommand);
+
+            // now delete directory
+            string deleteDirCommand = String.Format("update {0} set status = \"todelete\" where dirPathHash = \"{1}\" and " +
+                "status <> \"deleted\";", OriginalDirectoriesTable, dirHash);
+            db.ExecuteNonQuerySql(deleteDirCommand);
         }
 
         public DataSet GetListOfFilesInOriginalDirectory(string dirPathHash)
@@ -353,14 +468,16 @@ namespace DbInterface
             return depotID;
         }
 
-        public void CheckObjectStoreExistsAndInsertIfNot(string objectStorePath)
+        public int CheckObjectStoreExistsAndInsertIfNot(string objectStorePath)
         {
-            if (GetObjectStoreId(objectStorePath) == null)
+            int? objectStoreId = GetObjectStoreId(objectStorePath);
+            if (objectStoreId == null)
             {
                 string insertCommandString =
                     string.Format("insert into objectStores (dirPath) values (\"{0}\")", objectStorePath);
                 db.ExecuteNonQuerySql(insertCommandString);
-            }  
+            }
+            return (int)GetObjectStoreId(objectStorePath);
         }
 
         private void doInsertForAddFreshLocation(string filename, int objectStoreID)
@@ -375,23 +492,25 @@ namespace DbInterface
             string insertSqlString;
 
             string locationCommandString = String.Format("select objectStore1, objectStore2, objectStore3 from fileLocations where filehash = \"{0}\"", filename);
-            SQLiteDataReader locationReader = db.GetDataReaderForSqlQuery(locationCommandString);
-            if (locationReader.Read())
+            using (SQLiteDataReader locationReader = db.GetDataReaderForSqlQuery(locationCommandString))
             {
-                if (locationReader.IsDBNull(0))
-                    insertSqlString = String.Format("update fileLocations set objectStore1 = {0} where filehash = \"{1}\";", objectStoreID, filename);
-                else if (locationReader.IsDBNull(1))
-                    insertSqlString = String.Format("update fileLocations set objectStore2 = {0} where filehash = \"{1}\";", objectStoreID, filename);
-                else if (locationReader.IsDBNull(2))
-                    insertSqlString = String.Format("update fileLocations set objectStore3 = {0} where filehash = \"{1}\";", objectStoreID, filename);
-                else
-                    throw new Exception("non of the entries were null");
+                if (locationReader.Read())
+                {
+                    if (locationReader.IsDBNull(0))
+                        insertSqlString = String.Format("update fileLocations set objectStore1 = {0} where filehash = \"{1}\";", objectStoreID, filename);
+                    else if (locationReader.IsDBNull(1))
+                        insertSqlString = String.Format("update fileLocations set objectStore2 = {0} where filehash = \"{1}\";", objectStoreID, filename);
+                    else if (locationReader.IsDBNull(2))
+                        insertSqlString = String.Format("update fileLocations set objectStore3 = {0} where filehash = \"{1}\";", objectStoreID, filename);
+                    else
+                        throw new Exception("non of the entries were null");
 
-                db.ExecuteNonQuerySql(insertSqlString);
+                    db.ExecuteNonQuerySql(insertSqlString);
+                }
             }
         }
 
-        private void ReplaceFileLocation(string filehash, int oldObjectStoreID, int newObjectStoreId)
+        public void ReplaceFileLocation(string filehash, int oldObjectStoreID, int? newObjectStoreId)
         {
             string sqlCommand;
 
@@ -399,12 +518,13 @@ namespace DbInterface
             SQLiteDataReader locationReader = db.GetDataReaderForSqlQuery(locationCommandString);
             if (locationReader.Read())
             {
+                string newObjectStoreIdString = newObjectStoreId == null ? "null" : newObjectStoreId.ToString();
                 if ( (!locationReader.IsDBNull(0)) && (locationReader.GetInt32(0) == oldObjectStoreID))
-                    sqlCommand = String.Format("update fileLocations set objectStore1 = {0} where filehash = \"{1}\";", newObjectStoreId, filehash);
+                    sqlCommand = String.Format("update fileLocations set objectStore1 = {0} where filehash = \"{1}\";", newObjectStoreIdString, filehash);
                 else if ( (!locationReader.IsDBNull(1)) && (locationReader.GetInt32(1) == oldObjectStoreID))
-                    sqlCommand = String.Format("update fileLocations set objectStore2 = {0} where filehash = \"{1}\";", newObjectStoreId, filehash);
+                    sqlCommand = String.Format("update fileLocations set objectStore2 = {0} where filehash = \"{1}\";", newObjectStoreIdString, filehash);
                 else if ( (!locationReader.IsDBNull(2)) && (locationReader.GetInt32(2) == oldObjectStoreID))
-                    sqlCommand = String.Format("update fileLocations set objectStore3 = {0} where filehash = \"{1}\";", newObjectStoreId, filehash);
+                    sqlCommand = String.Format("update fileLocations set objectStore3 = {0} where filehash = \"{1}\";", newObjectStoreIdString, filehash);
                 else
                     throw new Exception("non of the entries were null");
 
@@ -413,55 +533,63 @@ namespace DbInterface
         }
 
 
-        public List<int> GetFileLocations(string filename)
+        public List<int> GetFileLocations(string filehash)
         {
             List<int> locationList = new List<int>();
 
-            string locationCommandString = String.Format("select objectStore1, objectStore2, objectStore3 from fileLocations where filehash = \"{0}\"", filename);
-            SQLiteDataReader locationReader = db.GetDataReaderForSqlQuery(locationCommandString);
-            if (locationReader.Read())
+            string locationCommandString = String.Format(
+                "select objectStore1, objectStore2, objectStore3 from fileLocations where filehash = \"{0}\"", filehash);
+            using (SQLiteDataReader locationReader = db.GetDataReaderForSqlQuery(locationCommandString))
             {
-                if (!locationReader.IsDBNull(0))
-                    locationList.Add(locationReader.GetInt32(0));
-                if (!locationReader.IsDBNull(1))
-                    locationList.Add(locationReader.GetInt32(1));
-                if (!locationReader.IsDBNull(2))
-                    locationList.Add(locationReader.GetInt32(2));
+                if (locationReader.Read())
+                {
+                    if (!locationReader.IsDBNull(0))
+                        locationList.Add(locationReader.GetInt32(0));
+                    if (!locationReader.IsDBNull(1))
+                        locationList.Add(locationReader.GetInt32(1));
+                    if (!locationReader.IsDBNull(2))
+                        locationList.Add(locationReader.GetInt32(2));
+                }
+                else // file hash not even in table
+                    locationList = null;
             }
 
             return locationList;
         }
 
-        public void AddFileLocation(string filename, string objectStoreRoot)
+        public void AddFileLocation(string filename, int objectStoreID)
         {
-            CheckObjectStoreExistsAndInsertIfNot(objectStoreRoot);
-
-            int depotId = (int)GetObjectStoreId(objectStoreRoot);
-
             // find any locations that exist already for this file
             List<int> existingLocations = GetFileLocations(filename);
 
+            if (existingLocations == null)
+            {
+                // filehash does not exist in table, insert it
+                NumOfNewFileLocations++;
+                doInsertForAddFreshLocation(filename, objectStoreID);
+                return;
+            }
+
             // if location already in existing locations, nothing to do, just return
-            if (existingLocations.Contains(depotId))
+            if (existingLocations.Contains(objectStoreID))
             {
                 NumOfDuplicateFileLocations++;
                 return;
             }
 
-            NumOfNewFileLocations++;
-            // if no locations yet, simple insert
-            if (existingLocations.Count == 0)
-            {
-                doInsertForAddFreshLocation(filename, depotId);
-                return;
-            }
-
-            // a location exists, but not this one, so insert it
+            // filehash exists in table but this location does not, so insert it
             if (existingLocations.Count == 3)
                 throw new Exception("already reached max number of locations, cannot add another");
             // TODO: in future will have an additional table to handle more than three location, maybe even more than two.
-            else
-                InsertAdditionalFileLocation(filename, depotId);
+
+            NumOfNewFileLocations++;
+            InsertAdditionalFileLocation(filename, objectStoreID);
+        }
+
+        public void AddFileLocation(string filename, string objectStoreRoot)
+        {
+            int depotId = CheckObjectStoreExistsAndInsertIfNot(objectStoreRoot);
+            AddFileLocation(filename, depotId);
         }
 
         public void AddOriginalRootDirectoryIfNotInDb(string dirPath)
@@ -504,6 +632,12 @@ namespace DbInterface
             db.ExecuteNonQuerySql(sqlCommand);
         }
 
+        public void SetToLater(string fileHash)
+        {
+            string sqlCommand = String.Format("update {0} set status = \"todoLater\" where filehash = \"{1}\";", FilesTable, fileHash);
+            db.ExecuteNonQuerySql(sqlCommand);
+        }
+
         public DataTable GetListOfFilesWithExtensionInOneObjectStore(string extension, string objectStorePath)
         {
             // get id of object store
@@ -539,12 +673,99 @@ namespace DbInterface
 
         public void MoveFileLocation(string filehash, string oldObjectStore, string newObjectStore)
         {
-            CheckObjectStoreExistsAndInsertIfNot(newObjectStore);
+            int newObjectStoreID = CheckObjectStoreExistsAndInsertIfNot(newObjectStore);
 
-            int oldObjectStoreID = (int)GetObjectStoreId(oldObjectStore);
-            int newObjectStoreID = (int)GetObjectStoreId(newObjectStore);
+            int? oldObjectStoreID = GetObjectStoreId(oldObjectStore);
 
-            ReplaceFileLocation(filehash, oldObjectStoreID, newObjectStoreID);
+            if (oldObjectStoreID != null)
+                ReplaceFileLocation(filehash, (int)oldObjectStoreID, newObjectStoreID);
+        }
+
+        // Will use this to build up a query, but for now...
+        public int GetNumberOfFiles()
+        {
+            string queryString = String.Format("select count(*) from {0}", FilesTable);
+            int count = (int) db.ExecuteSqlQueryReturningSingleInt(queryString);
+            return count;
+        }
+
+        // Will use this to build up a query, but for now...
+        public int GetNumberOfOriginalVersionsOfFiles()
+        {
+            string queryString = String.Format("select count(*) from {0}", OriginalDirectoriesForFileTable);
+            int count = (int)db.ExecuteSqlQueryReturningSingleInt(queryString);
+            return count;
+        }
+
+        // Will use this to build up a query, but for now...
+        public int GetNumberOfDirectories()
+        {
+            string queryString = String.Format("select count(*) from {0}", OriginalDirectoriesTable);
+            int count = (int)db.ExecuteSqlQueryReturningSingleInt(queryString);
+            return count;
+        }
+
+        public DataSet GetListOfExtensions(bool spaceTakenForEachType)
+        {
+            //// get list of all files with given extension in that object store
+            //string commandString = String.Format(
+            //    "select distinct filehash, filename from {0} join {1} using (dirPathHash) "
+            //    + "where extension = \"{2}\" COLLATE NOCASE and "
+            //    + "dirPath like \"%{3}%\"; ",
+            //    OriginalDirectoriesForFileTable, OriginalDirectoriesTable, extension, searchString);
+
+            //return db.GetDatasetForSqlQuery(commandString);
+
+            // count of each extension only - This version does not work, counts duplicates of files
+            //string commandString = String.Format("select extension, count(extension) as count from {0} group by extension order by count desc",
+            //    OriginalDirectoriesForFileTable);
+
+            string commandString = null;
+
+            if (spaceTakenForEachType)
+            {
+                //// count and space taken
+                // commandString = String.Format("select extension, count(extension) as fileCount, sum(filesize) as totalSpace " + 
+                //    "from {0} join {1} using (filehash) group by extension order by count desc",
+                //    OriginalDirectoriesForFileTable, FilesTable);
+                commandString = String.Format("select extension, count(*) as fileCount, sum(filesize) as totalSize from " + 
+                    " (select distinct filehash, extension, filesize from {0} join {1} using (filehash)) " +
+                    " group by extension order by totalSize desc",
+                    OriginalDirectoriesForFileTable, FilesTable);
+            }
+            else
+            {
+                commandString = String.Format("select extension, count(*) as fileCount from (select distinct filehash, extension " +
+                    "from {0}) group by extension order by fileCount desc",
+                    OriginalDirectoriesForFileTable);
+            }
+
+            return db.GetDatasetForSqlQuery(commandString);
+        }
+
+        public DataSet GetListOfExtensions(string extension, string searchString, bool countsOfEachType)
+        {
+            //// get list of all files with given extension in that object store
+            //string commandString = String.Format(
+            //    "select distinct filehash, filename from {0} join {1} using (dirPathHash) "
+            //    + "where extension = \"{2}\" COLLATE NOCASE and "
+            //    + "dirPath like \"%{3}%\"; ",
+            //    OriginalDirectoriesForFileTable, OriginalDirectoriesTable, extension, searchString);
+
+            //return db.GetDatasetForSqlQuery(commandString);
+
+            // count of each extension only - This version does not work, counts duplicates of files
+            //string commandString = String.Format("select extension, count(extension) as count from {0} group by extension order by count desc",
+            //    OriginalDirectoriesForFileTable);
+
+            string commandString = String.Format("select extension, count(*) as eCount from (select distinct filehash, extension, filesize " +
+                "from {0} join {1} using (filehash)) group by extension order by eCount desc",
+                OriginalDirectoriesForFileTable, FilesTable);
+
+            // count and space taken - have to check if duplicates files counted or not, suspect yes
+            string commandString2 = String.Format("select extension, count(extension) as count, sum(filesize) from {0} join {1} using (filehash) group by extension order by count desc",
+                OriginalDirectoriesForFileTable, FilesTable);
+            return null;
         }
     }
 }

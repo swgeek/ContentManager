@@ -1,0 +1,49 @@
+﻿<Window x:Class="RandomTasksUI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="350" Width="525">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="3*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+
+            </Grid.RowDefinitions>
+
+            <StackPanel Orientation="Vertical">
+                <Button  Margin="5" Content="GetObjectStores" Click="getObjectStoresButton_Click" />
+                <ListView Margin="5"  ItemsSource="{Binding}" SelectionMode="Single"
+                      x:Name="objectStoreList" SelectionChanged="objectStoreList_SelectionChanged">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Width="10" Header="id" DisplayMemberBinding="{Binding Path=id}" />
+                            <GridViewColumn Width="200" Header="dirPath" DisplayMemberBinding="{Binding Path=dirPath}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+             
+                <Button Margin="5" Content="Delete Store" Click="deleteStoreButton_Click" />
+                
+                <Button Margin="5" Content="Repair Store" Click="repairStoreButton_Click" />
+                
+                <Button Margin="5" Content="Add New Store" Click="addStoreButton_Click" />
+            </StackPanel>
+
+
+            <!--<Button Margin="5" Content="Report totals" Click="reportTotalsButton_Click" Grid.Row="1"/>
+
+            <Button Grid.Row="2" Margin="5" Content="Report extension list" Click="extensionListButton_Click" />
+            
+            <Button Grid.Row="3" Margin="5" Content="save report" Click="saveButton_Click" />-->
+        </Grid>
+        
+        <TextBox Grid.Column="1" Margin="5" Name="outputTextBox" />
+        
+        <Button Grid.Column="2" Margin="5" Content="temporary task" Click="temporaryTaskButton_Click" />
+    </Grid>
+</Window>

@@ -35,12 +35,14 @@ namespace DbInterface
         // TODO: create two types of connection: journal mode on and off, use on for create table etc., off for efficient stuff
         public void OpenConnection()
         {
-            dbConnection.Open();
+            if (dbConnection.State != ConnectionState.Open)
+                dbConnection.Open();
         }
 
         public void CloseConnection()
         {
-            dbConnection.Close();
+            if (dbConnection.State != ConnectionState.Closed)
+                dbConnection.Close();
         }
 
         public void ExecuteNonQuerySql(string sqlStatement)
@@ -52,8 +54,10 @@ namespace DbInterface
                 toClose = true;
             }
 
-            SQLiteCommand command = new SQLiteCommand(sqlStatement, dbConnection);
-            command.ExecuteNonQuery();
+            using (SQLiteCommand command = new SQLiteCommand(sqlStatement, dbConnection))
+            {
+                command.ExecuteNonQuery();
+            }
 
             if (toClose)
                 dbConnection.Close();
@@ -62,12 +66,14 @@ namespace DbInterface
         public int? ExecuteSqlQueryReturningSingleInt(string sqlStatement)
         {
             int? value = null;
-            SQLiteCommand command = new SQLiteCommand(sqlStatement, dbConnection);
-            SQLiteDataReader reader = command.ExecuteReader();
-            if (reader.Read())
+            using (SQLiteCommand command = new SQLiteCommand(sqlStatement, dbConnection))
             {
-                if (!reader.IsDBNull(0))
-                    value = reader.GetInt32(0);
+                SQLiteDataReader reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    if (!reader.IsDBNull(0))
+                        value = reader.GetInt32(0);
+                }
             }
             return value;
         }
@@ -76,14 +82,31 @@ namespace DbInterface
         {
             List<String> results = new List<string>();
 
-            SQLiteCommand command = new SQLiteCommand(sqlQueryString, dbConnection);
-            SQLiteDataReader reader = command.ExecuteReader();
-            while (reader.Read())
+            using (SQLiteCommand command = new SQLiteCommand(sqlQueryString, dbConnection))
             {
-                if (!reader.IsDBNull(0))
-                    results.Add(reader.GetString(0));
+                SQLiteDataReader reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    if (!reader.IsDBNull(0))
+                        results.Add(reader.GetString(0));
+                }
             }
             return results;
+        }
+
+        public String ExecuteSqlQueryForSingleString(string sqlQueryString)
+        {
+            string result = null;
+
+            using (SQLiteCommand command = new SQLiteCommand(sqlQueryString, dbConnection))
+            {
+                SQLiteDataReader reader = command.ExecuteReader();
+                if (reader.Read())
+                    if (!reader.IsDBNull(0))
+                        result = reader.GetString(0);
+            }
+
+            return result;
         }
 
         public DataSet GetDatasetForSqlQuery(string sqlQueryString)
@@ -92,13 +115,17 @@ namespace DbInterface
 
             // for debugging: List<string> trythis = ExecuteSqlQueryForStrings(sqlQueryString);
 
-            SQLiteDataAdapter dataAdaptor = new SQLiteDataAdapter();
-            SQLiteCommand command = new SQLiteCommand();
-            command.CommandText = sqlQueryString;
-            dataAdaptor.SelectCommand = command;
-            command.Connection = dbConnection;
-            DataSet dataset = new DataSet();
-            dataAdaptor.Fill(dataset);
+            DataSet dataset;
+
+            using (SQLiteDataAdapter dataAdaptor = new SQLiteDataAdapter())
+            {
+                SQLiteCommand command = new SQLiteCommand();
+                command.CommandText = sqlQueryString;
+                dataAdaptor.SelectCommand = command;
+                command.Connection = dbConnection;
+                dataset = new DataSet();
+                dataAdaptor.Fill(dataset);
+            }
 
             // for debugging:
             //int resultCount = dataset.Tables[0].Rows.Count;
@@ -113,9 +140,13 @@ namespace DbInterface
         // maybe pass in a callback or anonymous method to handle each field?
         public SQLiteDataReader GetDataReaderForSqlQuery(string sqlQueryString)
         {
+            SQLiteDataReader reader;
+
             // probably not optimal, but get it working, find best way later.
-            SQLiteCommand command = new SQLiteCommand(sqlQueryString, dbConnection);
-            SQLiteDataReader reader = command.ExecuteReader();
+            using (SQLiteCommand command = new SQLiteCommand(sqlQueryString, dbConnection))
+            {
+                reader = command.ExecuteReader();
+            }
             return reader;
         }
 

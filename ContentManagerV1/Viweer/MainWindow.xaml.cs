@@ -24,17 +24,13 @@ namespace Viweer
         {
             InitializeComponent();
 
-
             string dbFileName = Viweer.Properties.Settings.Default.DatabaseFilePath;
             if ((dbFileName != null) && (dbFileName != String.Empty))
                 databaseHelper = new DbHelper(dbFileName);
 
             databaseHelper.OpenConnection();
 
-           //DataSet fileData = databaseHelper.GetLargestFilesTodo(30);
-            DataSet fileData = databaseHelper.GetListOfFilesWithExtensionMatchingSearchString(".mp3", "salsa");
-            fileList.DataContext = fileData.Tables[0].DefaultView;
-
+            this.WindowState = System.Windows.WindowState.Maximized;
         }
 
         private void fileList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -137,8 +133,8 @@ namespace Viweer
                 Console.WriteLine(selectedItem);
                 DataRowView trythis = selectedItem as DataRowView;
                 string filehash = trythis.Row.ItemArray[0] as string;
-                string filename = trythis.Row.ItemArray[1] as string;
-                Console.WriteLine(filehash + ", " + filename);
+                Console.WriteLine(filehash);
+                string filename = databaseHelper.getFirstFilenameForFile(filehash);
                 ExtractFile(filehash, filename, destinationDir);
             }
 
@@ -181,6 +177,84 @@ namespace Viweer
         private void OnExtractAllButtonClick(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void goButton_Click(object sender, RoutedEventArgs e)
+        {
+            DataSet fileData = databaseHelper.GetLargestFiles(30);
+            //DataSet fileData = databaseHelper.GetLargestFilesTodo(30);
+            //DataSet fileData = databaseHelper.GetListOfFilesWithExtensionMatchingSearchString(".mp3", "salsa");
+            fileList.DataContext = fileData.Tables[0].DefaultView;
+
+        }
+
+        private void objectStoreList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
+
+        private void FillObjectStoreListBox()
+        {
+
+            DataSet storeData = databaseHelper.GetObjectStores();
+            for (int i=0; i<storeData.Tables[0].Rows.Count; i++)
+            {
+                string location = storeData.Tables[0].Rows[i][1].ToString();
+                ListBoxItem locationItem = new ListBoxItem();
+                locationItem.Content = location;
+                if (!Directory.Exists(location))
+                    locationItem.IsEnabled = false;
+                objectStoreListBox.Items.Add(locationItem);
+            }
+        }
+
+        private void ObjectStoreFilterCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            FillObjectStoreListBox();
+            objectStoreListBox.IsEnabled = true;
+        }
+
+        private void ObjectStoreFilterCheckBox_UnChecked(object sender, RoutedEventArgs e)
+        {
+            objectStoreListBox.IsEnabled = false;
+        }
+
+        private void OnLaterFile(object sender, RoutedEventArgs e)
+        {
+            databaseHelper.SetToLater(currentFileHash);
+        }
+
+        private void deleteItem(object sender, RoutedEventArgs e)
+        {
+            var trythis = e.Source;
+            var trythis2 = sender;
+        }
+
+        private void markItemToDoLater(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void deleteDirectoryMenuItemClicked(object sender, RoutedEventArgs e)
+        {
+            var selectedItem = dirList.SelectedItem;
+            Console.WriteLine(selectedItem.ToString());
+            DataRowView chosenRowData = selectedItem as DataRowView;
+            string dirpath = chosenRowData.Row.ItemArray[0] as string;
+            Console.WriteLine("selected dir: " + dirpath);
+            string dirpathHash = chosenRowData.Row.ItemArray[1] as string;
+            Console.WriteLine("selected dir hashvalue: " + dirpathHash);
+
+            string pathFromDb = databaseHelper.GetDirectoryPathForDirHash(dirpathHash);
+
+            if (! dirpath.Equals(pathFromDb))
+            {
+                MessageBox.Show("Problem: path from database does not match path selected, not deleted", "Problem", MessageBoxButton.OK);
+                return;
+            }
+
+            // delete directory and contents
+            databaseHelper.DeleteDirectoryAndContents(dirpathHash);
         }
 
     }
