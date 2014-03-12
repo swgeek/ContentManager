@@ -34,8 +34,8 @@ namespace ManageStoreLocations
             databaseHelper = new DbHelper(databasePath);
             databaseHelper.OpenConnection();
 
-            DataSet objectStoreData = databaseHelper.GetObjectStores();
-            objectStores.DataContext = objectStoreData.Tables[0].DefaultView;
+            DataTable objectStoreData = databaseHelper.GetObjectStores();
+            objectStores.DataContext = objectStoreData.DefaultView;
         }
 
         private void objectStore_SelectionChanged(object sender, SelectionChangedEventArgs e)

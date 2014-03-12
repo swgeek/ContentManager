@@ -1,4 +1,5 @@
-﻿using DbInterface;
+﻿using ContentManagerCore;
+using DbInterface;
 using MpvUtilities;
 using System;
 using System.Collections.Generic;
@@ -89,8 +90,8 @@ namespace RandomTasksUI
 
         private void getObjectStoresButton_Click(object sender, RoutedEventArgs e)
         {
-            DataSet fileData = databaseHelper.GetObjectStores();
-            objectStoreList.DataContext = fileData.Tables[0].DefaultView;
+            DataTable fileData = databaseHelper.GetObjectStores();
+            objectStoreList.DataContext = fileData.DefaultView;
         }
 
         private void objectStoreList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -137,5 +138,72 @@ namespace RandomTasksUI
                 MiscTasks.RestoreObjectStore(databaseHelper, objectStorePath, LogInfo);
             }
         }
+
+        private void startBackupButton_Click(object sender, RoutedEventArgs e)
+        {
+            string objectStoreRoot = backupObjectStoreTextBlock.Text;
+            if ((objectStoreRoot == null) || (!Directory.Exists(objectStoreRoot)))
+                return;
+
+            const long minExtraSpaceToLeave = 10000000000;
+            int objectStoreID = databaseHelper.CheckObjectStoreExistsAndInsertIfNot(objectStoreRoot);
+            string drivePath = System.IO.Path.GetPathRoot(objectStoreRoot);
+            DriveInfo driveInfo = new DriveInfo(drivePath);
+
+            bool spaceAvailable = driveInfo.AvailableFreeSpace > minExtraSpaceToLeave;
+
+            while (spaceAvailable)
+            {
+                List<String> fileList = databaseHelper.GetFilesWithOnlyOneLocation(1000);
+                foreach (string filehash in fileList)
+                {
+                    // get object store path
+                    List<string> objectStorePaths = databaseHelper.GetObjectStorePathsForFile(filehash);
+                    if (objectStorePaths.Count != 1)
+                        throw new Exception("Number of locations should be 1 but is something else for file " + filehash);
+
+                    string filePath = DepotPathUtilities.GetExistingFilePath(objectStorePaths.First(), filehash);
+
+                    // expecting all primary object stores to be online for now, will fix later...
+                    if (filePath == null)
+                        throw new Exception(filePath + "does not exist");
+
+                    string newFilePath = DepotPathUtilities.GetHashFilePathV2(objectStoreRoot, filehash);
+                    FileInfo fileInfo = new FileInfo(filePath);
+
+                    long tempValue = driveInfo.AvailableFreeSpace;
+                    // check space
+                    if (driveInfo.AvailableFreeSpace < (minExtraSpaceToLeave + fileInfo.Length))
+                    {
+                        spaceAvailable = false;
+                        break;
+                    }
+
+                    // copy file. For now, don't overwrite, but really should check filesize!
+                    if (!File.Exists(newFilePath))
+                    {
+                        File.Copy(filePath, newFilePath);
+
+                        // update database with new location
+                        databaseHelper.AddFileLocation(filehash, objectStoreID);
+                    }
+                }
+            }
+
+        }
+
+        private void backupButton_Click(object sender, RoutedEventArgs e)
+        {
+            string dirName = MpvUtilities.FilePickerUtility.PickDirectory();
+            if ((dirName != null) && (Directory.Exists(dirName)))
+            {
+                backupObjectStoreTextBlock.Visibility = System.Windows.Visibility.Visible;
+                backupObjectStoreTextBlock.Text = dirName;
+                startBackupButton.Visibility = System.Windows.Visibility.Visible;
+            }
+
+        }
+
+
     }
 }

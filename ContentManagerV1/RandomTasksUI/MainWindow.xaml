@@ -8,17 +8,12 @@
             <ColumnDefinition Width="3*" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
-        
+
         <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
-
-            </Grid.RowDefinitions>
-
             <StackPanel Orientation="Vertical">
                 <Button  Margin="5" Content="GetObjectStores" Click="getObjectStoresButton_Click" />
                 <ListView Margin="5"  ItemsSource="{Binding}" SelectionMode="Single"
-                      x:Name="objectStoreList" SelectionChanged="objectStoreList_SelectionChanged">
+                                x:Name="objectStoreList" SelectionChanged="objectStoreList_SelectionChanged">
                     <ListView.View>
                         <GridView>
                             <GridViewColumn Width="10" Header="id" DisplayMemberBinding="{Binding Path=id}" />
@@ -26,24 +21,47 @@
                         </GridView>
                     </ListView.View>
                 </ListView>
-             
-                <Button Margin="5" Content="Delete Store" Click="deleteStoreButton_Click" />
-                
-                <Button Margin="5" Content="Repair Store" Click="repairStoreButton_Click" />
-                
-                <Button Margin="5" Content="Add New Store" Click="addStoreButton_Click" />
+
+
+                <TabControl  HorizontalAlignment="Stretch" >
+                   <TabItem Header="Misc" Name="MiscTab" Background="BlueViolet">
+                        <Grid>
+
+                            <StackPanel Grid.Column="2" Margin="5">
+                                <Button Margin="5" Content="temporary task" Click="temporaryTaskButton_Click" />
+                                <Button Margin="5" Content="Delete Store" Click="deleteStoreButton_Click" />
+                                <Button Margin="5" Content="Repair Store" Click="repairStoreButton_Click" />
+                                <Button Margin="5" Content="Add New Store" Click="addStoreButton_Click" />
+                            </StackPanel>
+                        </Grid>
+                    </TabItem>
+                    
+                    <TabItem Header="Trythis" Name="trythisTab" Background="LightGray">
+
+
+                    </TabItem>
+
+
+                </TabControl>
+
+
+
             </StackPanel>
 
-
             <!--<Button Margin="5" Content="Report totals" Click="reportTotalsButton_Click" Grid.Row="1"/>
-
-            <Button Grid.Row="2" Margin="5" Content="Report extension list" Click="extensionListButton_Click" />
-            
-            <Button Grid.Row="3" Margin="5" Content="save report" Click="saveButton_Click" />-->
+                        <Button Grid.Row="2" Margin="5" Content="Report extension list" Click="extensionListButton_Click" />
+                        <Button Grid.Row="3" Margin="5" Content="save report" Click="saveButton_Click" />-->
         </Grid>
-        
+
+
+
         <TextBox Grid.Column="1" Margin="5" Name="outputTextBox" />
-        
-        <Button Grid.Column="2" Margin="5" Content="temporary task" Click="temporaryTaskButton_Click" />
+
+        <StackPanel Grid.Column="2" Orientation="Vertical">
+            <Button Content="backup" Click="backupButton_Click"/>
+            <TextBlock Name="backupObjectStoreTextBlock" Visibility="Hidden" />
+            <Button Name="startBackupButton" Content="Start Backup" Click="startBackupButton_Click" Visibility="Hidden" />
+        </StackPanel>
+
     </Grid>
 </Window>

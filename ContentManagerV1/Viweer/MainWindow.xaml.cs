@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -19,6 +20,10 @@ namespace Viweer
     {
         DbHelper databaseHelper = null;
         string currentFileHash = null;
+        FileList filelist;
+        bool stopProcessing = false;
+        int currentDepotId = -1;
+        string currentDepotRootPath = null;
 
         public MainWindow()
         {
@@ -95,7 +100,7 @@ namespace Viweer
 
         private void ExtractFile(string fileHash, string filename, string destinationDir)
         {
-            List<string> locations = databaseHelper.GetFileLocationPaths(fileHash);
+            List<string> locations = databaseHelper.GetObjectStorePathsForFile(fileHash);
 
             string filePath = null;
             foreach (string location in locations)
@@ -181,7 +186,12 @@ namespace Viweer
 
         private void goButton_Click(object sender, RoutedEventArgs e)
         {
-            DataSet fileData = databaseHelper.GetLargestFiles(30);
+            bool todoFiles = todoFilesChoice.IsChecked == true ? true: false;
+            bool todeleteFiles = todeleteFilesChoice.IsChecked == true ? true : false; 
+            bool todolaterFiles = todoLaterFilesChoice.IsChecked == true ? true : false; 
+            bool deletedFiles = deletedFilesChoice.IsChecked == true ? true : false; 
+
+            DataSet fileData = databaseHelper.GetLargestFiles(30, todoFiles, todolaterFiles, todeleteFiles, deletedFiles);
             //DataSet fileData = databaseHelper.GetLargestFilesTodo(30);
             //DataSet fileData = databaseHelper.GetListOfFilesWithExtensionMatchingSearchString(".mp3", "salsa");
             fileList.DataContext = fileData.Tables[0].DefaultView;
@@ -196,10 +206,10 @@ namespace Viweer
         private void FillObjectStoreListBox()
         {
 
-            DataSet storeData = databaseHelper.GetObjectStores();
-            for (int i=0; i<storeData.Tables[0].Rows.Count; i++)
+            DataTable storeData = databaseHelper.GetObjectStores();
+            for (int i=0; i<storeData.Rows.Count; i++)
             {
-                string location = storeData.Tables[0].Rows[i][1].ToString();
+                string location = storeData.Rows[i][1].ToString();
                 ListBoxItem locationItem = new ListBoxItem();
                 locationItem.Content = location;
                 if (!Directory.Exists(location))
@@ -255,6 +265,128 @@ namespace Viweer
 
             // delete directory and contents
             databaseHelper.DeleteDirectoryAndContents(dirpathHash);
+        }
+
+        private void ComboBox_Loaded(object sender, RoutedEventArgs e)
+        {
+            DataTable storeTable = databaseHelper.GetObjectStores();
+            List<string> objectStorePaths = new List<string>();
+
+            for (int i = 0; i < storeTable.Rows.Count; i++ )
+            {
+                string location = storeTable.Rows[i]["dirPath"].ToString();
+                if (Directory.Exists(location))
+                    objectStorePaths.Add(location);
+            }
+
+            objectStoreComboBox.ItemsSource = objectStorePaths;
+            objectStoreComboBox.SelectedIndex = 0;
+
+        }
+
+        private void pickDirectoryToImportButton_Click(object sender, RoutedEventArgs e)
+        {
+            string dirPath = MpvUtilities.FilePickerUtility.PickDirectory();
+            if ((string.IsNullOrEmpty(dirPath)) || (!Directory.Exists(dirPath)))
+                return;
+
+            directoryToImportTextBlock.Text = dirPath;
+        }
+
+        private void listImportFilesButton_Click(object sender, RoutedEventArgs e)
+        {
+            string dirPath = directoryToImportTextBlock.Text;
+            if ((string.IsNullOrEmpty(dirPath)) || (!Directory.Exists(dirPath)))
+                return;
+
+            // Get file list (with or without filesizes? not sure yet)
+            // display file list
+            // if not enough space in object store, maybe show a message
+            // display start import button
+            filelist = TraverseDir.GetAllFilesInDir(dirPath);
+            fileListStackPanel.Visibility = System.Windows.Visibility.Visible;
+            countRemainingTextBlock.Text = filelist.Count.ToString();
+
+            filesToImportListBox.ItemsSource = filelist.fileList;
+
+        }
+
+        async private void importFiles()
+        {
+            string rootDir = directoryToImportTextBlock.Text;
+
+            while ((stopProcessing == false) && (filelist != null) && (filelist.Count > 0))
+            {
+                string currentFile = filelist.CurrentFile();
+
+                // should do this part when building filelist, not now.
+                if (System.IO.Directory.Exists(currentFile))
+                {
+                    if (currentFile.Equals(rootDir))
+                        ; // add as originalRootDirectory
+                    else
+                        ; // add as subdirectory
+                }
+                else if (System.IO.File.Exists(currentFile))
+                {
+                    await HashFile(currentFile);
+                }
+                else
+                {
+                    throw new Exception(currentFile + " does not exist!");
+                }
+
+                filelist.RemoveCurrentFile();
+            }
+        }
+
+        private void startImportButton_Click(object sender, RoutedEventArgs e)
+        {
+            currentDepotRootPath = objectStoreComboBox.SelectedItem as string;
+
+            if (string.IsNullOrEmpty(currentDepotRootPath) || !Directory.Exists(currentDepotRootPath))
+                return;
+
+            importFiles();
+        }
+
+        private async Task HashFile(string filePath)
+        {
+            await Task.Run(() =>
+            {
+                string hashValue = SH1HashUtilities.HashFile(filePath);
+                string objectStoreFileName = DepotPathUtilities.GetHashFilePathV2(currentDepotRootPath, hashValue);
+                FileInfo fileInfo = new FileInfo(filePath);
+
+                if (!databaseHelper.FileAlreadyInDatabase(hashValue, fileInfo.Length))
+                {
+                    CopyFile(filePath, hashValue);
+                    // TODO: add location, size, type, maybe modified date to db under hash value
+                    // TODO: add hashvalue to directory object in db. How to make directory key unique? Maybe add date or time of addition? not sure,
+                    // think this one through...
+
+                    databaseHelper.AddFile(hashValue, fileInfo.Length);
+                }
+                // always add directory info even if file is in db already, as may be a different copy and name
+
+                // check this is correct call, have made some changes
+                databaseHelper.AddOriginalFileLocation(hashValue, filePath);
+            });
+        }
+
+        public void CopyFile(string filePath, string hashValue)
+        {
+            string objectStoreFileName = DepotPathUtilities.GetHashFilePathV2(currentDepotRootPath, hashValue);
+
+            if (File.Exists(objectStoreFileName))
+            {
+                // technically this should not happen - we already checked the database. maybe throw an exception?
+                throw new Exception(String.Format("File {0} already exists ", objectStoreFileName));
+            }
+            else
+            {
+                File.Copy(filePath, objectStoreFileName);
+            }
         }
 
     }

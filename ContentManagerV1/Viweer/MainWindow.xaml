@@ -5,6 +5,43 @@
         Closing="Window_Closing">
 
     <Grid>
+
+
+        <TabControl  HorizontalAlignment="Stretch"  Grid.Column="1">
+            
+            <TabItem Header="Import" Name="importTab" Background="LightGray">
+                <Grid>
+                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    
+                    <StackPanel Orientation="Horizontal" Margin="10">
+                        <!-- want drop down lists for primary and secondary stores, button and textbox to choose dir to import -->
+                        <TextBlock Text="Target object store: " Margin="5" />
+                        <ComboBox Name="objectStoreComboBox" Loaded="ComboBox_Loaded" Margin="5 5 25 5" />
+                        <Button Content="Pick Directory to Import" Margin="5" Click="pickDirectoryToImportButton_Click" />
+                        <TextBlock Name="directoryToImportTextBlock" Text="" Margin="5 5 25 5" />
+                        <Button Content="List files to import" Margin="5" Click="listImportFilesButton_Click" />
+                    </StackPanel>
+
+                    <StackPanel Name="fileListStackPanel" Visibility="Collapsed" Orientation="Horizontal" Margin="10" Grid.Row="1">
+                        <ListBox Name="filesToImportListBox" />
+                        <StackPanel>
+                            <TextBlock Text="number of files remaining:" />
+                            <TextBlock Name="countRemainingTextBlock" Margin="5 5 5 25"/>
+                            <Button Content="Import Files" Margin="5" Click="startImportButton_Click" />
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+            
+            
+            
+            
+            
+            <TabItem Header="Misc" Name="MiscTab" Background="BlueViolet">
+                <Grid >
         
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -23,15 +60,15 @@
                 <RowDefinition Height="*" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            
-            <StackPanel>
-                <CheckBox Name="objectStoreFilterCheckBox" Content="Filter by object store" 
+
+                        <StackPanel>
+                            <CheckBox Name="objectStoreFilterCheckBox" Content="Filter by object store" 
                           Checked="ObjectStoreFilterCheckBox_Checked" Unchecked="ObjectStoreFilterCheckBox_UnChecked" />
-                
-                <ListBox IsEnabled="False"  Name="objectStoreListBox" SelectionMode="Extended" Background="DarkGray" 
+
+                            <ListBox IsEnabled="False"  Name="objectStoreListBox" SelectionMode="Extended" Background="DarkGray" 
                          SelectionChanged="objectStoreList_SelectionChanged" />
-            </StackPanel>
-        </Grid>
+                        </StackPanel>
+                    </Grid>
 
 
         <!-- top pane -->
@@ -43,6 +80,13 @@
 
             </Grid.ColumnDefinitions>
 
+            <StackPanel Orientation="Horizontal" >
+                <CheckBox Name="todoFilesChoice"  Content="todo" IsChecked="True"/>
+                <CheckBox Name="todeleteFilesChoice" Content="toDelete"/>
+                <CheckBox Name="todoLaterFilesChoice" Content="todo later" />
+                <CheckBox Name="deletedFilesChoice" Content="deleted" />
+            </StackPanel>
+            
             <!--<StackPanel>
                 <RadioButton GroupName="trythis" Content="largest files" IsChecked="True"/>
                 <RadioButton GroupName="trythis" Content="smallest files" />
@@ -75,7 +119,6 @@
                     <ContextMenu>
                         <MenuItem Header="Menu Item" Click="deleteItem" 
                                   CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=filehash}">
-                            delete
                         </MenuItem>
                         <MenuItem Header="Menu Item" Click="markItemToDoLater">mark todo later</MenuItem>
                     </ContextMenu>
@@ -83,6 +126,7 @@
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Width="42" Header="hash" DisplayMemberBinding="{Binding Path=filehash}" />
+                        <GridViewColumn Width="40" Header="status" DisplayMemberBinding="{Binding Path=status}" />                    
                     </GridView>
                 </ListView.View>
             </ListView>
@@ -139,5 +183,12 @@
             <Button Margin="5" Click="OnExtractDirButtonClick" Grid.Row="5" Grid.Column="1">destination folder</Button>
             <TextBlock Margin="5" Name="extractDirectoryTextBlock"  Grid.Row="5"  Grid.Column="2" />
         </Grid>
+        </Grid>
+            </TabItem>
+
+
+        </TabControl>
+
+
     </Grid>
 </Window>

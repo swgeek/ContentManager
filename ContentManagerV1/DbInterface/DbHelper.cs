@@ -1,11 +1,12 @@
-﻿using System;
+﻿using MpvUtilities;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MpvUtilities;
+
 
 // interface to database. Abstract out so can swap databases without changing code elsewhere
 namespace DbInterface
@@ -313,9 +314,47 @@ namespace DbInterface
             return db.GetDatasetForSqlQuery(commandString) ;
         }
 
-        public DataSet GetLargestFiles(int numOfFiles)
+        public List<String> GetFilesWithOnlyOneLocation(int numOfFiles)
         {
-            string commandString = String.Format("select filehash from {0} order by filesize desc limit {1}", FilesTable, numOfFiles);
+            string locationsCommand = String.Format("select filehash from (select filehash, count(*) as K from " +
+                " (select filehash, objectStore1 as o from {0} where o is not null " +
+                " union select filehash, objectStore2 as o from {0} where o is not null " +
+                " union select filehash, objectStore3 as o from {0} where o is not null " +
+                " ) group by filehash) where K = 1 limit {1};", FileLocationsTable, numOfFiles);
+
+            return db.ExecuteSqlQueryForStrings(locationsCommand);
+        }
+
+        public DataSet GetLargestFiles(int numOfFiles, bool includeTodo, bool includeTodoLater, bool includeToDelete, bool includeDeleted)
+        {
+            string commandString;
+
+            if (includeTodo && includeTodoLater && includeToDelete && includeDeleted)
+            {
+                // everything chosen, simplify the query
+                commandString = String.Format("select filehash, status from {0} order by filesize desc limit {1}", FilesTable, numOfFiles);
+            }
+            else
+            {
+                // using the "filehash not null" just to simplify code to add to the query, can always use "or" after this 
+                commandString = String.Format("select filehash, status from {0} where filehash is null", FilesTable);
+
+                if (includeTodo)
+                    commandString = commandString + " or status = \"todo\"";
+
+                if (includeTodoLater)
+                    commandString = commandString + " or status = \"todoLater\"";
+
+                if (includeToDelete)
+                    commandString = commandString + " or status = \"todelete\"";
+
+                if (includeDeleted)
+                    commandString = commandString + " or status = \"deleted\"";
+
+                commandString = commandString + " order by filesize desc limit " + numOfFiles.ToString() + ";";
+
+
+            }
             return db.GetDatasetForSqlQuery(commandString);
         }
 
@@ -326,12 +365,13 @@ namespace DbInterface
             return db.GetDatasetForSqlQuery(commandString);
         }
 
-        public DataSet GetObjectStores()
+        public DataTable GetObjectStores()
         {
             string commandString = String.Format("select id, dirPath from {0};", ObjectStoresTable);
-            return db.GetDatasetForSqlQuery(commandString);
+            return db.GetDatasetForSqlQuery(commandString).Tables[0];
         }
 
+        // combine this with method above
         private int? numOfFilesWithOnlyOneLocation(int objectStoreID, string mainField, string secondfield, string thirdField)
         {
             // check if any file has specified location in main field but does not have another location
@@ -413,14 +453,15 @@ namespace DbInterface
 
         public void DeleteDirectoryAndContents(string dirHash)
         {
+            // just mark directory to be deleted, delete the contents later...
             // delete files within directory
             
-            // first delete files
-            string deleteFilesCommand = String.Format("update {0} set status = \"todelete\" where status <> \"deleted\" and " +
-                " filehash in (select filehash from {1} where dirPathHash = \"{2}\");", FilesTable, OriginalDirectoriesForFileTable, dirHash);
-            db.ExecuteNonQuerySql(deleteFilesCommand);
+            //// first delete files
+            //string deleteFilesCommand = String.Format("update {0} set status = \"todelete\" where status <> \"deleted\" and " +
+            //    " filehash in (select filehash from {1} where dirPathHash = \"{2}\");", FilesTable, OriginalDirectoriesForFileTable, dirHash);
+            //db.ExecuteNonQuerySql(deleteFilesCommand);
 
-            // now delete directory
+            // delete directory
             string deleteDirCommand = String.Format("update {0} set status = \"todelete\" where dirPathHash = \"{1}\" and " +
                 "status <> \"deleted\";", OriginalDirectoriesTable, dirHash);
             db.ExecuteNonQuerySql(deleteDirCommand);
@@ -610,7 +651,7 @@ namespace DbInterface
             }  
         }
 
-        public List<string> GetFileLocationPaths(string fileHash)
+        public List<string> GetObjectStorePathsForFile(string fileHash)
         {
             List<int> locationList = GetFileLocations(fileHash);
 
@@ -619,10 +660,10 @@ namespace DbInterface
             foreach (int location in locationList)
             {
                 string commandString = String.Format("select dirPath from {0} where id = {1}", ObjectStoresTable, location);
-                SQLiteDataReader reader = db.GetDataReaderForSqlQuery(commandString);
-                if (reader.Read())
-                    locationPaths.Add(reader.GetString(0));
+                string objectStoreRootPath = db.ExecuteSqlQueryForSingleString(commandString);
+                locationPaths.Add(objectStoreRootPath);
             }
+
             return locationPaths;
         }
 
