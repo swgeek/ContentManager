@@ -1,5 +1,18 @@
-﻿
+﻿Work on next:
 
+0) be able to open file from within app
+
+1) provide a link to/from deleted files: e.g. psd files link to flattened psd. 
+
+2) provide method of generating for certain files, e.g. psd to flat psd
+
+3) constantly cleanup code.
+
+4) need to seperate UI and core code a lot more, too much in main file.
+
+5) Provide a directory tree view.
+
+6) search
 
 - have a way to compare object store to original directory so can check if done, this complements the log.
 

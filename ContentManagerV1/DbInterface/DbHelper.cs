@@ -55,6 +55,31 @@ namespace DbInterface
             db.CloseConnection();
         }
 
+
+
+
+
+        public void CreateDb(string dbFilePath)
+        {
+            if (System.IO.File.Exists(dbFilePath))
+                throw new Exception("File already exists!");
+
+            SQLiteConnection.CreateFile(dbFilePath);
+            string connectionString = String.Format("Data Source={0};Version=3;", dbFilePath);
+            SQLiteConnection dbConnection = new SQLiteConnection(connectionString);
+            dbConnection.Open();
+
+            // create tables
+
+            dbConnection.Close();
+        }
+
+
+
+
+
+
+
         private void CreateTables()
         {
             db.CreateTables(); // TEMPORARY, the sql needs to reside here, not in db

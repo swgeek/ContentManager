@@ -67,19 +67,14 @@ namespace Viweer
         }
 
 
-
+        // maybe todo: create a dirlist and filelist type, so can use those directly instead of datatables.
         private void listDirectory(string dirhash)
         {
+            
             DataTable dirListData = databaseHelper.GetListOfFilesInOriginalDirectory(dirhash);
 
             string dirPath = databaseHelper.GetDirectoryPathForDirHash(dirhash);
             DirNameTextBlock.Text = dirPath;
-
-            //int resultCount = dirListData.Tables[0].Rows.Count;
-            //for (int i = 0; i < resultCount; i++)
-            //{
-            //    Console.WriteLine(dirListData.Tables[0].Rows[i][0].ToString());
-            //}
 
             filesInDir.DataContext = dirListData.DefaultView;
 
@@ -432,16 +427,84 @@ namespace Viweer
             DataRowView chosenRowData = selectedItem as DataRowView;
             string dirpath = chosenRowData.Row.ItemArray[0] as string;
             Console.WriteLine("selected dir: " + dirpath);
+            string dirHash = chosenRowData.Row["dirPathHash"].ToString();
+
+            // if dirlist not showing this directory, then show it
+            if (! DirNameTextBlock.Text.Equals(dirpath))
+                listDirectory(dirHash);
 
             // get files in chosen directory
-            // extract files
-            // repeat for each subdirectory
+            // already have list displayed, so no need to query again
+            DataView fileListView = filesInDir.DataContext as DataView;
+            foreach  (DataRow row in fileListView.Table.Rows)
+            {
+                string filehash = row["filehash"] as string;
+                string filename = row["filename"] as string;
+                ExtractFile(filehash, filename, destinationDir);
 
+            }
 
-              //  ExtractFile(filehash, filename, destinationDir);
+            // TODO: subdirectories
 
             Process.Start(destinationDir);
 
+        }
+
+        private void SetDirectoryDeleteState(string dirpathHash)
+        {
+            string status = databaseHelper.GetStatusOfDirectory(dirpathHash);
+            if (status.Equals("deleted"))
+                return;
+
+            bool canMarkDirectoryAsDeleted = true;
+
+            // first do subdirectories
+            string[] subDirs = databaseHelper.GetSubdirectories(dirpathHash);
+
+            foreach (string subDirPathHash in subDirs)
+            {
+                SetDirectoryDeleteState(subDirPathHash);
+
+                string newStatus = databaseHelper.GetStatusOfDirectory(subDirPathHash);
+                if (!newStatus.Equals("deleted"))
+                    canMarkDirectoryAsDeleted = false;
+            }
+
+            string[] files = databaseHelper.GetFileListForDirectory(dirpathHash);
+
+            foreach (string filehash in files)
+            {
+                string fileStatus = databaseHelper.GetStatusOfFile(filehash);
+                if (!fileStatus.Equals("deleted"))
+                {
+                    canMarkDirectoryAsDeleted = false;
+
+                    if (!fileStatus.Equals("todelete"))
+                    {
+                        databaseHelper.setFileStatus(filehash, "todelete");
+                    }
+                }
+            }
+
+            if (canMarkDirectoryAsDeleted)
+                databaseHelper.setDirectoryStatus(dirpathHash, "deleted");
+
+        }
+
+        private void MarkFilesInToDeleteDirectories()
+        {
+            List<string> dirList = databaseHelper.GetDirPathHashListForToDeleteDirectories();
+
+
+            foreach (string dirpathHash in dirList)
+            {
+                SetDirectoryDeleteState(dirpathHash);
+            }
+        }
+
+        private void processDeleteDirButton_Click(object sender, RoutedEventArgs e)
+        {
+            MarkFilesInToDeleteDirectories();
         }
     }
 }

@@ -63,8 +63,9 @@
             <Button Name="startBackupButton" Content="Start Backup" Click="startBackupButton_Click" Visibility="Hidden" />
 
             <Button Margin="10" Content="Process ToDelete Directories" Click="processToDeleteDirectoriesButton_Click" />
-            
+
             <Button Margin="10" Content="Perform Deletes" Click="deleteButton_Click" />
+            <Button Margin="10" Content="ExtractLargeCr2Files" Click="extractLargeCr2FilesButton_Click" />
             <!--<Button Margin="10" Content="Create Table" Click="createTableButton_Click" />-->
         </StackPanel>
 

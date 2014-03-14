@@ -308,6 +308,11 @@ namespace RandomTasksUI
 
         }
 
+        private void extractLargeCr2FilesButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
 
     }
 }
