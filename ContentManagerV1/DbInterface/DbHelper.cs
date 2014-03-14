@@ -36,6 +36,8 @@ namespace DbInterface
         private const string OriginalDirectoriesTable = "originalDirectoriesV2";
         private const string ObjectStoresTable = "objectStores";
         private const string FileLocationsTable = "fileLocations";
+        private const string FileListingForDirTable = "FileListingForDir";
+        private const string SubdirListingForDirTable = "SubdirListingForDir";
 
         public DbHelper(string databaseFilePathName)
         {
@@ -73,6 +75,40 @@ namespace DbInterface
             db.CloseConnection();
         }
 
+        public void CreateNewMappingTables1()
+        {
+            db.OpenConnection();
+
+            //string createTableCommand = "create table FileListingForDir (dirPathHash char(40) PRIMARY KEY, files varchar(64000));";
+            //db.ExecuteNonQuerySql(createTableCommand);
+
+            // transfer data
+            string transferCommand = String.Format("insert into {0} (dirPathHash, files) select dirPathHash, group_concat(filehash, ';') " + 
+                " from {1} group by dirPathHash;", FileListingForDirTable, OriginalDirectoriesForFileTable);
+            db.ExecuteNonQuerySql(transferCommand);
+
+            db.CloseConnection();
+
+            //string subdircommand = "select dirPathHash, group_concat(subdirPathHash, ';') from originalDirToSubdir group by dirPathHash";
+        }
+
+        public void CreateNewMappingTables2()
+        {
+            db.OpenConnection();
+
+            string createTableCommand = String.Format("create table {0} (dirPathHash char(40) PRIMARY KEY, subdirs varchar(64000));", 
+                SubdirListingForDirTable);
+            db.ExecuteNonQuerySql(createTableCommand);
+
+            // transfer data
+            string transferCommand = String.Format("insert into {0} (dirPathHash, subdirs) select dirPathHash, group_concat(subdirPathHash, ';') " +
+                " from {1} group by dirPathHash;", SubdirListingForDirTable, "originalDirToSubdir");
+            db.ExecuteNonQuerySql(transferCommand);
+
+            db.CloseConnection();
+
+            //string subdircommand = "select dirPathHash, group_concat(subdirPathHash, ';') from originalDirToSubdir group by dirPathHash";
+        }
         // temporary code to copy data to new version of a particular table. Leave code here for now in case need to do something similar in the future
         public void TransferDataToNewVersionOfTable()
         {
@@ -314,13 +350,26 @@ namespace DbInterface
             return db.GetDatasetForSqlQuery(commandString) ;
         }
 
-        public List<String> GetFilesWithOnlyOneLocation(int numOfFiles)
+        //public List<String> GetFilesWithOnlyOneLocation(int numOfFiles)
+        //{
+        //    string locationsCommand = String.Format("select filehash from (select filehash, count(*) as K from " +
+        //        " (select filehash, objectStore1 as o from {0} where o is not null " +
+        //        " union select filehash, objectStore2 as o from {0} where o is not null " +
+        //        " union select filehash, objectStore3 as o from {0} where o is not null " +
+        //        " ) group by filehash) where K = 1 limit {1};", FileLocationsTable, numOfFiles);
+
+        //    return db.ExecuteSqlQueryForStrings(locationsCommand);
+        //}
+
+        public List<String> GetUndeletedFilesWithOnlyOneLocation(int numOfFiles)
         {
-            string locationsCommand = String.Format("select filehash from (select filehash, count(*) as K from " +
+            string locationsCommand = String.Format("select filehash from (select filehash from (select filehash, count(*) as K from " +
                 " (select filehash, objectStore1 as o from {0} where o is not null " +
                 " union select filehash, objectStore2 as o from {0} where o is not null " +
                 " union select filehash, objectStore3 as o from {0} where o is not null " +
-                " ) group by filehash) where K = 1 limit {1};", FileLocationsTable, numOfFiles);
+                " ) group by filehash) where K = 1) join {1} using (filehash) " +
+                "where status <> \"deleted\" and status <> \"todelete\" limit {2};", 
+                FileLocationsTable, FilesTable, numOfFiles);
 
             return db.ExecuteSqlQueryForStrings(locationsCommand);
         }
@@ -356,6 +405,13 @@ namespace DbInterface
 
             }
             return db.GetDatasetForSqlQuery(commandString);
+        }
+
+        // should find a way to roll these queries into one routine, but for now...
+        public List<string> GetListOfFilesToDelete()
+        {
+            string commandString = String.Format("select filehash from {0} where status = \'todelete\';", FilesTable);
+            return db.ExecuteSqlQueryForStrings(commandString);
         }
 
         public DataSet GetFilesFromObjectStore(int objectStoreID)
@@ -467,19 +523,49 @@ namespace DbInterface
             db.ExecuteNonQuerySql(deleteDirCommand);
         }
 
-        public DataSet GetListOfFilesInOriginalDirectory(string dirPathHash)
+        public DataTable GetListOfFilesInOriginalDirectory(string dirPathHash)
         {
             string commandString = String.Format("select filename, filehash, status from {0} join {1} using (filehash) where dirPathHash = \"{2}\" ;", 
                 OriginalDirectoriesForFileTable, FilesTable, dirPathHash);
-            return db.GetDatasetForSqlQuery(commandString);
+            return db.GetDatasetForSqlQuery(commandString).Tables[0];
         }
 
-        public DataSet GetListOfSubdirectoriesInOriginalDirectory(string dirPathHash)
+        public string[] GetFileListForDirectory(string dirPathHash)
+        {
+            string commandString = String.Format("select files from {0} where dirPathHash = \'{1}\';", FileListingForDirTable, dirPathHash);
+            string fileListString = db.ExecuteSqlQueryForSingleString(commandString);
+            if (string.IsNullOrEmpty(fileListString))
+                return new string[0];
+            return fileListString.Split(';');
+
+        }
+
+        public string GetStatusOfDirectory(string dirPathHash)
+        {
+            string command = String.Format("select status from {0} where dirPathHash = \"{1}\";", OriginalDirectoriesTable, dirPathHash);
+            return db.ExecuteSqlQueryForSingleString(command);
+        }
+
+        public string GetStatusOfFile(string filehash)
+        {
+            string command = String.Format("select status from {0} where filehash = \"{1}\";", FilesTable, filehash);
+            return db.ExecuteSqlQueryForSingleString(command);
+        }
+        public DataTable GetListOfSubdirectoriesInOriginalDirectory(string dirPathHash)
         {
             string commandString = String.Format(
-                "select dirPath from {0}, {1} where {0}.dirPathHash = \"{2}\" and {0}.subdirPathHash = {1}.dirPathHash ",
+                "select dirPath, {1}.dirPathHash, status  from {0}, {1} where {0}.dirPathHash = \"{2}\" and {0}.subdirPathHash = {1}.dirPathHash ",
                 "originalDirToSubdir", "OriginalDirectoriesV2", dirPathHash);
-            return db.GetDatasetForSqlQuery(commandString);
+            return db.GetDatasetForSqlQuery(commandString).Tables[0];
+        }
+
+        public string[] GetSubdirectories(string dirPathHash)
+        {
+            string commandString = String.Format("select subdirs from {0} where dirPathHash = \'{1}\';", SubdirListingForDirTable, dirPathHash);
+            string subDirListString = db.ExecuteSqlQueryForSingleString(commandString);
+            if (string.IsNullOrEmpty(subDirListString))
+                return new string[0];
+            return subDirListString.Split(';');
         }
 
         // for now, just the hash filenames, will return more info later. Maybe.
@@ -667,16 +753,26 @@ namespace DbInterface
             return locationPaths;
         }
 
+        public void setDirectoryStatus(string dirPathHash, string newStatus)
+        {
+            string sqlCommand = String.Format("update {0} set status = \"{1}\" where dirPathHash = \"{2}\";", OriginalDirectoriesTable, newStatus, dirPathHash);
+            db.ExecuteNonQuerySql(sqlCommand);
+        }
+
+        public void setFileStatus(string fileHash, string newStatus)
+        {
+            string sqlCommand = String.Format("update {0} set status = \"{1}\" where filehash = \"{2}\";", FilesTable, newStatus, fileHash);
+            db.ExecuteNonQuerySql(sqlCommand);
+        }
+
         public void SetToDelete(string fileHash)
         {
-            string sqlCommand = String.Format("update {0} set status = \"todelete\" where filehash = \"{1}\";", FilesTable, fileHash);
-            db.ExecuteNonQuerySql(sqlCommand);
+            setFileStatus(fileHash, "todelete");
         }
 
         public void SetToLater(string fileHash)
         {
-            string sqlCommand = String.Format("update {0} set status = \"todoLater\" where filehash = \"{1}\";", FilesTable, fileHash);
-            db.ExecuteNonQuerySql(sqlCommand);
+            setFileStatus(fileHash, "todoLater");
         }
 
         public DataTable GetListOfFilesWithExtensionInOneObjectStore(string extension, string objectStorePath)
@@ -807,6 +903,12 @@ namespace DbInterface
             string commandString2 = String.Format("select extension, count(extension) as count, sum(filesize) from {0} join {1} using (filehash) group by extension order by count desc",
                 OriginalDirectoriesForFileTable, FilesTable);
             return null;
+        }
+
+        public List<string> GetDirPathHashListForToDeleteDirectories()
+        {
+            string command = String.Format("select dirPathHash from {0} where status = \"todelete\";", OriginalDirectoriesTable);
+            return db.ExecuteSqlQueryForStrings(command);
         }
     }
 }

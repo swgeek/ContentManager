@@ -154,7 +154,7 @@ namespace RandomTasksUI
 
             while (spaceAvailable)
             {
-                List<String> fileList = databaseHelper.GetFilesWithOnlyOneLocation(1000);
+                List<String> fileList = databaseHelper.GetUndeletedFilesWithOnlyOneLocation(1000);
                 foreach (string filehash in fileList)
                 {
                     // get object store path
@@ -201,6 +201,110 @@ namespace RandomTasksUI
                 backupObjectStoreTextBlock.Text = dirName;
                 startBackupButton.Visibility = System.Windows.Visibility.Visible;
             }
+
+        }
+
+        private void SetDirectoryDeleteState(string dirpathHash)
+        {
+            string status = databaseHelper.GetStatusOfDirectory(dirpathHash);
+            if (status.Equals("deleted"))
+                return;
+
+            bool canMarkDirectoryAsDeleted = true;
+
+            // first do subdirectories
+            string[] subDirs = databaseHelper.GetSubdirectories(dirpathHash);
+
+            foreach (string subDirPathHash in subDirs)
+            {
+                SetDirectoryDeleteState(subDirPathHash);
+
+                string newStatus = databaseHelper.GetStatusOfDirectory(subDirPathHash);
+                if (!newStatus.Equals("deleted"))
+                    canMarkDirectoryAsDeleted = false;
+            }
+
+            string[] files = databaseHelper.GetFileListForDirectory(dirpathHash);
+
+            foreach (string filehash in files)
+            {
+                string fileStatus = databaseHelper.GetStatusOfFile(filehash);
+                if (!fileStatus.Equals("deleted"))
+                {
+                    canMarkDirectoryAsDeleted = false;
+
+                    if (!fileStatus.Equals("todelete"))
+                    {
+                        databaseHelper.setFileStatus(filehash, "todelete");
+                    }
+                }
+            }
+
+            if (canMarkDirectoryAsDeleted)
+                databaseHelper.setDirectoryStatus(dirpathHash, "deleted");
+
+        }
+
+        private void MarkFilesInToDeleteDirectories()
+        {
+            List<string> dirList = databaseHelper.GetDirPathHashListForToDeleteDirectories();
+
+
+            foreach (string dirpathHash in dirList)
+            {
+                SetDirectoryDeleteState(dirpathHash);
+            }
+        }
+
+        private void processToDeleteDirectoriesButton_Click(object sender, RoutedEventArgs e)
+        {
+            MarkFilesInToDeleteDirectories();
+        }
+
+        private void createTableButton_Click(object sender, RoutedEventArgs e)
+        {
+            databaseHelper.CreateNewMappingTables2();
+        }
+
+        private void deleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            // make sure files in "todelete" subdirectories are marked for delete
+            MarkFilesInToDeleteDirectories();
+
+            List<string> todeleteFileList = databaseHelper.GetListOfFilesToDelete();
+
+            foreach (string filehash in todeleteFileList)
+            {
+                List<string> objectStoresForFile = databaseHelper.GetObjectStorePathsForFile(filehash);
+                // make a copy so can remove items without causing a problem with my foreach loop
+                List<string> objectStoresForFileCopy = new List<string>(objectStoresForFile);
+
+                foreach (string objectStoreRoot in objectStoresForFileCopy)
+                {
+                    // check object store is available
+                    if (Directory.Exists(objectStoreRoot))
+                    {
+                        string filePath = DepotPathUtilities.GetExistingFilePath(objectStoreRoot, filehash);
+                        if (!File.Exists(filePath))
+                            throw new Exception(filePath + " does not exist!");
+
+                        File.SetAttributes(filePath, FileAttributes.Normal);
+                        File.Delete(filePath);
+                        int objectStoreId = (int)databaseHelper.GetObjectStoreId(objectStoreRoot);
+                        databaseHelper.ReplaceFileLocation(filehash, objectStoreId, null);
+                        objectStoresForFile.Remove(objectStoreRoot);
+                    }
+                }
+
+                if (objectStoresForFile.Count == 0)
+                {   
+                    // yay, removed all copies
+                    databaseHelper.setFileStatus(filehash, "deleted");
+                }
+            }
+ 
+            // update directories where all files have been deleted
+            MarkFilesInToDeleteDirectories();
 
         }
 

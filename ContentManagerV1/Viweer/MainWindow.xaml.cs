@@ -66,6 +66,29 @@ namespace Viweer
             filenameTextBlock.Text = filename;
         }
 
+
+
+        private void listDirectory(string dirhash)
+        {
+            DataTable dirListData = databaseHelper.GetListOfFilesInOriginalDirectory(dirhash);
+
+            string dirPath = databaseHelper.GetDirectoryPathForDirHash(dirhash);
+            DirNameTextBlock.Text = dirPath;
+
+            //int resultCount = dirListData.Tables[0].Rows.Count;
+            //for (int i = 0; i < resultCount; i++)
+            //{
+            //    Console.WriteLine(dirListData.Tables[0].Rows[i][0].ToString());
+            //}
+
+            filesInDir.DataContext = dirListData.DefaultView;
+
+            DataTable subdirListData = databaseHelper.GetListOfSubdirectoriesInOriginalDirectory(dirhash);
+
+            subdirsInDir.DataContext = subdirListData.DefaultView;
+        }
+
+
         private void dirList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (e.AddedItems.Count == 0)
@@ -77,19 +100,7 @@ namespace Viweer
             string value = trythis.Row.ItemArray[1] as string;
             Console.WriteLine("selected dir hash: " + value);
 
-            DataSet dirListData = databaseHelper.GetListOfFilesInOriginalDirectory(value);
-
-            //int resultCount = dirListData.Tables[0].Rows.Count;
-            //for (int i = 0; i < resultCount; i++)
-            //{
-            //    Console.WriteLine(dirListData.Tables[0].Rows[i][0].ToString());
-            //}
-
-            filesInDir.DataContext = dirListData.Tables[0].DefaultView;
-
-            DataSet subdirListData = databaseHelper.GetListOfSubdirectoriesInOriginalDirectory(value);
-
-            subdirsInDir.DataContext = subdirListData.Tables[0].DefaultView;
+            listDirectory(value);
 
         }
 
@@ -252,6 +263,11 @@ namespace Viweer
             DataRowView chosenRowData = selectedItem as DataRowView;
             string dirpath = chosenRowData.Row.ItemArray[0] as string;
             Console.WriteLine("selected dir: " + dirpath);
+
+            MessageBoxResult choice =  MessageBox.Show("Delete dir " + dirpath + "?", "delete?", MessageBoxButton.OKCancel);
+            if (choice != MessageBoxResult.OK)
+                return;
+
             string dirpathHash = chosenRowData.Row.ItemArray[1] as string;
             Console.WriteLine("selected dir hashvalue: " + dirpathHash);
 
@@ -389,5 +405,43 @@ namespace Viweer
             }
         }
 
+        private void listDirectoryMenuItemClicked(object sender, RoutedEventArgs e)
+        {
+            var selectedItem = subdirsInDir.SelectedItem;
+            Console.WriteLine(selectedItem.ToString());
+            DataRowView chosenRowData = selectedItem as DataRowView;
+            string dirpath = chosenRowData.Row.ItemArray[0] as string;
+            Console.WriteLine("selected dir: " + dirpath);
+            string dirpathHash = chosenRowData.Row.ItemArray[1] as string;
+            Console.WriteLine("selected dir hashvalue: " + dirpathHash);
+            listDirectory(dirpathHash);
+        }
+
+        private void extractDirectoryMenuItemClicked(object sender, RoutedEventArgs e)
+        {
+            if (extractDirectoryTextBlock.Text == String.Empty)
+                return;
+
+            string destinationDir = extractDirectoryTextBlock.Text;
+
+            if (!Directory.Exists(destinationDir))
+                return;
+
+            var selectedItem = dirList.SelectedItem;
+            Console.WriteLine(selectedItem.ToString());
+            DataRowView chosenRowData = selectedItem as DataRowView;
+            string dirpath = chosenRowData.Row.ItemArray[0] as string;
+            Console.WriteLine("selected dir: " + dirpath);
+
+            // get files in chosen directory
+            // extract files
+            // repeat for each subdirectory
+
+
+              //  ExtractFile(filehash, filename, destinationDir);
+
+            Process.Start(destinationDir);
+
+        }
     }
 }
