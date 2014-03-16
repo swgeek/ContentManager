@@ -109,10 +109,10 @@
                     <ListView Margin="5" Grid.RowSpan="2"  ItemsSource="{Binding}" x:Name="fileList" SelectionChanged="fileList_SelectionChanged">
                         <ListView.ContextMenu>
                             <ContextMenu>
-                                <MenuItem Header="Menu Item" Click="deleteItem" 
+                                <MenuItem Header="Menu Item" Click="deleteMenuItem_Click" 
                                           CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=filehash}">
                                 </MenuItem>
-                                <MenuItem Header="Menu Item" Click="markItemToDoLater">mark todo later</MenuItem>
+                                <MenuItem Header="Menu Item" Click="markToDoLaterMenuItem_Click">mark todo later</MenuItem>
                             </ContextMenu>
                         </ListView.ContextMenu>
                         <ListView.View>
@@ -178,7 +178,7 @@
                         
                         <TextBlock Margin="5"  Name="filenameTextBlock" Text="No Selection Made"  Grid.Row="2" />
                     <Button Margin="5" Content="Extract selected file" Click="OnExtractFile" Grid.Row="3" />
-                    <Button Margin="5" Content="Extract all files from directory" Click="OnExtractDir" Grid.Row="3" Grid.Column="1"/>
+                    <!--<Button Margin="5" Content="Extract all files from directory" Click="OnExtractDir" Grid.Row="3" Grid.Column="1"/>-->
                     <Button Margin="5" Content="process delete Dirs" Click="processDeleteDirButton_Click" Grid.Row="4" Grid.Column="1"/>
                     <Button Margin="5" Content="delete selected file" Click="OnDeleteFile" Grid.Row="4" />
                     <Button Margin="5" Content="mark as later" Click="OnLaterFile" Grid.Row="5" />

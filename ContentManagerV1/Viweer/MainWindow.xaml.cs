@@ -18,23 +18,18 @@ namespace Viweer
     /// </summary>
     public partial class MainWindow : Window
     {
-        DbHelper databaseHelper = null;
-        string currentFileHash = null;
-        FileList filelist;
+        CViweer viweerHelper;
         bool stopProcessing = false;
-        int currentDepotId = -1;
-        string currentDepotRootPath = null;
+
+        string currentFileHash; // temporary
+
+        FileList filelist;
 
         public MainWindow()
         {
             InitializeComponent();
-
             string dbFileName = Viweer.Properties.Settings.Default.DatabaseFilePath;
-            if ((dbFileName != null) && (dbFileName != String.Empty))
-                databaseHelper = new DbHelper(dbFileName);
-
-            databaseHelper.OpenConnection();
-
+            viweerHelper = new CViweer(dbFileName);
             this.WindowState = System.Windows.WindowState.Maximized;
         }
 
@@ -50,37 +45,27 @@ namespace Viweer
             Console.WriteLine("selected file: " + value);
             currentFileHash = value;
 
-            DataSet dirListData = databaseHelper.GetOriginalDirectoriesForFile(value);
+            //DataSet dirListData = databaseHelper.GetOriginalDirectoriesForFile(value);
+            //dirList.DataContext = dirListData.Tables[0].DefaultView;
 
-            //int resultCount = dirListData.Tables[0].Rows.Count;
-            //for (int i = 0; i < resultCount; i++)
-            //{
-            //    Console.WriteLine(dirListData.Tables[0].Rows[i][0].ToString());
-            //}
+            //// filename could be different in different dirs, 
+            //// get first filename in dirlist and use that for now
+            //string filename = dirListData.Tables[0].Rows[0]["filename"].ToString();
+            //filenameTextBlock.Text = filename;
 
-            dirList.DataContext = dirListData.Tables[0].DefaultView;
-
-            // filename could be different in different dirs, 
-            // get first filename in dirlist and use that for now
-            string filename = dirListData.Tables[0].Rows[0]["filename"].ToString();
-            filenameTextBlock.Text = filename;
+            DataView directoriesView = viweerHelper.OriginalDirectoriesForFile(value);
+            string firstFileName = directoriesView.Table.Rows[0]["filename"].ToString();
+            dirList.DataContext = directoriesView;
+            filenameTextBlock.Text = firstFileName;
         }
 
 
         // maybe todo: create a dirlist and filelist type, so can use those directly instead of datatables.
         private void listDirectory(string dirhash)
         {
-            
-            DataTable dirListData = databaseHelper.GetListOfFilesInOriginalDirectory(dirhash);
-
-            string dirPath = databaseHelper.GetDirectoryPathForDirHash(dirhash);
-            DirNameTextBlock.Text = dirPath;
-
-            filesInDir.DataContext = dirListData.DefaultView;
-
-            DataTable subdirListData = databaseHelper.GetListOfSubdirectoriesInOriginalDirectory(dirhash);
-
-            subdirsInDir.DataContext = subdirListData.DefaultView;
+            filesInDir.DataContext = viweerHelper.FilesInOriginalDirectory(dirhash);
+            DirNameTextBlock.Text = viweerHelper.OriginalDirectoryPathForDirHash(dirhash);
+            subdirsInDir.DataContext = viweerHelper.SubdirectoriesInOriginalDirectory(dirhash);
         }
 
 
@@ -94,74 +79,27 @@ namespace Viweer
             DataRowView trythis = selectedItem as DataRowView;
             string value = trythis.Row.ItemArray[1] as string;
             Console.WriteLine("selected dir hash: " + value);
-
             listDirectory(value);
-
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            databaseHelper.CloseConnection();
-        }
-
-        private void ExtractFile(string fileHash, string filename, string destinationDir)
-        {
-            List<string> locations = databaseHelper.GetObjectStorePathsForFile(fileHash);
-
-            string filePath = null;
-            foreach (string location in locations)
-            {
-                filePath = DepotPathUtilities.GetExistingFilePath(location, fileHash);
-                if (filePath != null)
-                    break;
-            }
-
-            if (filePath == null)
-            {
-                // cannot extract, use msgbox or status field
-            }
-            else
-            {
-                string newPath = System.IO.Path.Combine(destinationDir, filename);
-                if (! File.Exists(newPath))
-                    File.Copy(filePath, newPath);
-            }
-
+            viweerHelper.cleanup();
         }
 
         private void OnExtractFile(object sender, RoutedEventArgs e)
         {
-            if (extractDirectoryTextBlock.Text == String.Empty)
-                return;
-
             string destinationDir = extractDirectoryTextBlock.Text;
-
-            if (!Directory.Exists(destinationDir))
-                return;
 
             foreach (var selectedItem in fileList.SelectedItems)
             {
-                Console.WriteLine(selectedItem);
                 DataRowView trythis = selectedItem as DataRowView;
                 string filehash = trythis.Row.ItemArray[0] as string;
-                Console.WriteLine(filehash);
-                string filename = databaseHelper.getFirstFilenameForFile(filehash);
-                ExtractFile(filehash, filename, destinationDir);
+                string filename = viweerHelper.GetFirstFilename(filehash);
+                viweerHelper.ExtractFile(filehash, filename, destinationDir);
             }
 
             Process.Start(extractDirectoryTextBlock.Text);
-        }
-
-        private void OnExtractDir(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void OnExtractDirButtonClick(object sender, RoutedEventArgs e)
-        {
-            string dirname = FilePickerUtility.PickDirectory();
-            if ((dirname != null) && (dirname != String.Empty))
-                extractDirectoryTextBlock.Text = dirname;
         }
 
         private void OnDeleteFile(object sender, RoutedEventArgs e)
@@ -169,7 +107,8 @@ namespace Viweer
             if (currentFileHash == null)
                 return;
 
-            databaseHelper.SetToDelete(currentFileHash);
+            viweerHelper.DeleteFile(currentFileHash);
+
             currentFileHash = null;
             filenameTextBlock.Text = String.Empty;
 
@@ -180,15 +119,6 @@ namespace Viweer
             // reset file list
         }
 
-        private void OnDeleteDir(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void OnExtractAllButtonClick(object sender, RoutedEventArgs e)
-        {
-
-        }
 
         private void goButton_Click(object sender, RoutedEventArgs e)
         {
@@ -196,23 +126,13 @@ namespace Viweer
             bool todeleteFiles = todeleteFilesChoice.IsChecked == true ? true : false; 
             bool todolaterFiles = todoLaterFilesChoice.IsChecked == true ? true : false; 
             bool deletedFiles = deletedFilesChoice.IsChecked == true ? true : false; 
-
-            DataSet fileData = databaseHelper.GetLargestFiles(30, todoFiles, todolaterFiles, todeleteFiles, deletedFiles);
-            //DataSet fileData = databaseHelper.GetLargestFilesTodo(30);
-            //DataSet fileData = databaseHelper.GetListOfFilesWithExtensionMatchingSearchString(".mp3", "salsa");
-            fileList.DataContext = fileData.Tables[0].DefaultView;
-
-        }
-
-        private void objectStoreList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-
+            fileList.DataContext = viweerHelper.GetLargestFiles(todoFiles, todolaterFiles, todeleteFiles, deletedFiles);
         }
 
         private void FillObjectStoreListBox()
         {
-
-            DataTable storeData = databaseHelper.GetObjectStores();
+            objectStoreListBox.Items.Clear();
+            DataTable storeData = viweerHelper.ObjectStores();
             for (int i=0; i<storeData.Rows.Count; i++)
             {
                 string location = storeData.Rows[i][1].ToString();
@@ -237,18 +157,7 @@ namespace Viweer
 
         private void OnLaterFile(object sender, RoutedEventArgs e)
         {
-            databaseHelper.SetToLater(currentFileHash);
-        }
-
-        private void deleteItem(object sender, RoutedEventArgs e)
-        {
-            var trythis = e.Source;
-            var trythis2 = sender;
-        }
-
-        private void markItemToDoLater(object sender, RoutedEventArgs e)
-        {
-
+            viweerHelper.SetTodoLater(currentFileHash);
         }
 
         private void deleteDirectoryMenuItemClicked(object sender, RoutedEventArgs e)
@@ -257,30 +166,20 @@ namespace Viweer
             Console.WriteLine(selectedItem.ToString());
             DataRowView chosenRowData = selectedItem as DataRowView;
             string dirpath = chosenRowData.Row.ItemArray[0] as string;
-            Console.WriteLine("selected dir: " + dirpath);
 
             MessageBoxResult choice =  MessageBox.Show("Delete dir " + dirpath + "?", "delete?", MessageBoxButton.OKCancel);
             if (choice != MessageBoxResult.OK)
                 return;
 
             string dirpathHash = chosenRowData.Row.ItemArray[1] as string;
-            Console.WriteLine("selected dir hashvalue: " + dirpathHash);
 
-            string pathFromDb = databaseHelper.GetDirectoryPathForDirHash(dirpathHash);
-
-            if (! dirpath.Equals(pathFromDb))
-            {
-                MessageBox.Show("Problem: path from database does not match path selected, not deleted", "Problem", MessageBoxButton.OK);
-                return;
-            }
-
-            // delete directory and contents
-            databaseHelper.DeleteDirectoryAndContents(dirpathHash);
+            if (! viweerHelper.DeleteDirectory(dirpathHash, dirpath))
+                MessageBox.Show("Problem: could not delete directory " + dirpath, "Problem", MessageBoxButton.OK);
         }
 
         private void ComboBox_Loaded(object sender, RoutedEventArgs e)
         {
-            DataTable storeTable = databaseHelper.GetObjectStores();
+            DataTable storeTable = viweerHelper.ObjectStores();
             List<string> objectStorePaths = new List<string>();
 
             for (int i = 0; i < storeTable.Rows.Count; i++ )
@@ -340,7 +239,7 @@ namespace Viweer
                 }
                 else if (System.IO.File.Exists(currentFile))
                 {
-                    await HashFile(currentFile);
+                    await viweerHelper.HashFile(currentFile);
                 }
                 else
                 {
@@ -353,51 +252,12 @@ namespace Viweer
 
         private void startImportButton_Click(object sender, RoutedEventArgs e)
         {
-            currentDepotRootPath = objectStoreComboBox.SelectedItem as string;
+            string currentDepotRootPath = objectStoreComboBox.SelectedItem as string;
 
             if (string.IsNullOrEmpty(currentDepotRootPath) || !Directory.Exists(currentDepotRootPath))
                 return;
 
             importFiles();
-        }
-
-        private async Task HashFile(string filePath)
-        {
-            await Task.Run(() =>
-            {
-                string hashValue = SH1HashUtilities.HashFile(filePath);
-                string objectStoreFileName = DepotPathUtilities.GetHashFilePathV2(currentDepotRootPath, hashValue);
-                FileInfo fileInfo = new FileInfo(filePath);
-
-                if (!databaseHelper.FileAlreadyInDatabase(hashValue, fileInfo.Length))
-                {
-                    CopyFile(filePath, hashValue);
-                    // TODO: add location, size, type, maybe modified date to db under hash value
-                    // TODO: add hashvalue to directory object in db. How to make directory key unique? Maybe add date or time of addition? not sure,
-                    // think this one through...
-
-                    databaseHelper.AddFile(hashValue, fileInfo.Length);
-                }
-                // always add directory info even if file is in db already, as may be a different copy and name
-
-                // check this is correct call, have made some changes
-                databaseHelper.AddOriginalFileLocation(hashValue, filePath);
-            });
-        }
-
-        public void CopyFile(string filePath, string hashValue)
-        {
-            string objectStoreFileName = DepotPathUtilities.GetHashFilePathV2(currentDepotRootPath, hashValue);
-
-            if (File.Exists(objectStoreFileName))
-            {
-                // technically this should not happen - we already checked the database. maybe throw an exception?
-                throw new Exception(String.Format("File {0} already exists ", objectStoreFileName));
-            }
-            else
-            {
-                File.Copy(filePath, objectStoreFileName);
-            }
         }
 
         private void listDirectoryMenuItemClicked(object sender, RoutedEventArgs e)
@@ -440,7 +300,7 @@ namespace Viweer
             {
                 string filehash = row["filehash"] as string;
                 string filename = row["filename"] as string;
-                ExtractFile(filehash, filename, destinationDir);
+                viweerHelper.ExtractFile(filehash, filename, destinationDir);
 
             }
 
@@ -450,61 +310,35 @@ namespace Viweer
 
         }
 
-        private void SetDirectoryDeleteState(string dirpathHash)
+           private void processDeleteDirButton_Click(object sender, RoutedEventArgs e)
         {
-            string status = databaseHelper.GetStatusOfDirectory(dirpathHash);
-            if (status.Equals("deleted"))
-                return;
-
-            bool canMarkDirectoryAsDeleted = true;
-
-            // first do subdirectories
-            string[] subDirs = databaseHelper.GetSubdirectories(dirpathHash);
-
-            foreach (string subDirPathHash in subDirs)
-            {
-                SetDirectoryDeleteState(subDirPathHash);
-
-                string newStatus = databaseHelper.GetStatusOfDirectory(subDirPathHash);
-                if (!newStatus.Equals("deleted"))
-                    canMarkDirectoryAsDeleted = false;
-            }
-
-            string[] files = databaseHelper.GetFileListForDirectory(dirpathHash);
-
-            foreach (string filehash in files)
-            {
-                string fileStatus = databaseHelper.GetStatusOfFile(filehash);
-                if (!fileStatus.Equals("deleted"))
-                {
-                    canMarkDirectoryAsDeleted = false;
-
-                    if (!fileStatus.Equals("todelete"))
-                    {
-                        databaseHelper.setFileStatus(filehash, "todelete");
-                    }
-                }
-            }
-
-            if (canMarkDirectoryAsDeleted)
-                databaseHelper.setDirectoryStatus(dirpathHash, "deleted");
-
+            viweerHelper.MarkFilesInToDeleteDirectories();
         }
 
-        private void MarkFilesInToDeleteDirectories()
-        {
-            List<string> dirList = databaseHelper.GetDirPathHashListForToDeleteDirectories();
+           private void objectStoreList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+           {
 
+           }
 
-            foreach (string dirpathHash in dirList)
-            {
-                SetDirectoryDeleteState(dirpathHash);
-            }
-        }
+           private void deleteMenuItem_Click(object sender, RoutedEventArgs e)
+           {
 
-        private void processDeleteDirButton_Click(object sender, RoutedEventArgs e)
-        {
-            MarkFilesInToDeleteDirectories();
-        }
+           }
+
+           private void markToDoLaterMenuItem_Click(object sender, RoutedEventArgs e)
+           {
+
+           }
+
+           private void OnExtractDirButtonClick(object sender, RoutedEventArgs e)
+           {
+               string destinationDir = MpvUtilities.FilePickerUtility.PickDirectory();
+
+               if (string.IsNullOrEmpty(destinationDir) || !Directory.Exists(destinationDir))
+                   return;
+
+               extractDirectoryTextBlock.Text = destinationDir;
+
+           }
     }
 }
