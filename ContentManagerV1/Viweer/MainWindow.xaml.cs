@@ -45,18 +45,20 @@ namespace Viweer
             Console.WriteLine("selected file: " + value);
             currentFileHash = value;
 
-            //DataSet dirListData = databaseHelper.GetOriginalDirectoriesForFile(value);
-            //dirList.DataContext = dirListData.Tables[0].DefaultView;
-
-            //// filename could be different in different dirs, 
-            //// get first filename in dirlist and use that for now
-            //string filename = dirListData.Tables[0].Rows[0]["filename"].ToString();
-            //filenameTextBlock.Text = filename;
-
             DataView directoriesView = viweerHelper.OriginalDirectoriesForFile(value);
             string firstFileName = directoriesView.Table.Rows[0]["filename"].ToString();
             dirList.DataContext = directoriesView;
-            filenameTextBlock.Text = firstFileName;
+        }
+
+        private void ListDirectoresForFile()
+        {
+            string filehash = chosenFileTextBlock.Text;
+
+            if (string.IsNullOrEmpty(filehash))
+                return;
+
+            DataView directoriesView = viweerHelper.OriginalDirectoriesForFile(filehash);
+            dirList.DataContext = directoriesView;
         }
 
 
@@ -91,6 +93,9 @@ namespace Viweer
         {
             string destinationDir = extractDirectoryTextBlock.Text;
 
+            if (string.IsNullOrEmpty(destinationDir))
+                return;
+
             foreach (var selectedItem in fileList.SelectedItems)
             {
                 DataRowView trythis = selectedItem as DataRowView;
@@ -110,7 +115,6 @@ namespace Viweer
             viweerHelper.DeleteFile(currentFileHash);
 
             currentFileHash = null;
-            filenameTextBlock.Text = String.Empty;
 
             filesInDir.DataContext = null;
             dirList.DataContext = null;
@@ -131,17 +135,18 @@ namespace Viweer
 
         private void FillObjectStoreListBox()
         {
-            objectStoreListBox.Items.Clear();
             DataTable storeData = viweerHelper.ObjectStores();
-            for (int i=0; i<storeData.Rows.Count; i++)
-            {
-                string location = storeData.Rows[i][1].ToString();
-                ListBoxItem locationItem = new ListBoxItem();
-                locationItem.Content = location;
-                if (!Directory.Exists(location))
-                    locationItem.IsEnabled = false;
-                objectStoreListBox.Items.Add(locationItem);
-            }
+            objectStoreListBox.DataContext = storeData;
+            //objectStoreListBox.Items.Clear();
+            //for (int i=0; i<storeData.Rows.Count; i++)
+            //{
+            //    string location = storeData.Rows[i][1].ToString();
+            //    ListBoxItem locationItem = new ListBoxItem();
+            //    locationItem.Content = location;
+            //    if (!Directory.Exists(location))
+            //        locationItem.IsEnabled = false;
+            //    objectStoreListBox.Items.Add(locationItem);
+            //}
         }
 
         private void ObjectStoreFilterCheckBox_Checked(object sender, RoutedEventArgs e)
@@ -190,8 +195,6 @@ namespace Viweer
             }
 
             objectStoreComboBox.ItemsSource = objectStorePaths;
-            objectStoreComboBox.SelectedIndex = 0;
-
         }
 
         private void pickDirectoryToImportButton_Click(object sender, RoutedEventArgs e)
@@ -221,43 +224,50 @@ namespace Viweer
 
         }
 
-        async private void importFiles()
+        async private void importFiles(string depotRoot)
         {
             string rootDir = directoryToImportTextBlock.Text;
 
+            // Should I check if there is space in the object store and give a message? Not sure...
+
+            if (!Directory.Exists(rootDir))
+                return;
+
+            viweerHelper.AddOriginalRootDirectory(rootDir);
+
+
             while ((stopProcessing == false) && (filelist != null) && (filelist.Count > 0))
             {
-                string currentFile = filelist.CurrentFile();
+                string currentPath = filelist.CurrentFile();
 
-                // should do this part when building filelist, not now.
-                if (System.IO.Directory.Exists(currentFile))
+                if (System.IO.Directory.Exists(currentPath))
                 {
-                    if (currentFile.Equals(rootDir))
-                        ; // add as originalRootDirectory
-                    else
-                        ; // add as subdirectory
+                    if (! currentPath.Equals(rootDir))
+                        viweerHelper.AddOriginalSubDirectory(currentPath);
                 }
-                else if (System.IO.File.Exists(currentFile))
+                else if (System.IO.File.Exists(currentPath))
                 {
-                    await viweerHelper.HashFile(currentFile);
+                    await viweerHelper.HashFile(currentPath, depotRoot);
                 }
                 else
                 {
-                    throw new Exception(currentFile + " does not exist!");
+                    throw new Exception(currentPath + " does not exist!");
                 }
 
                 filelist.RemoveCurrentFile();
+                countRemainingTextBlock.Text = filelist.Count.ToString();
             }
+
+            reportTextBox.Text = viweerHelper.LogMessage();
         }
 
         private void startImportButton_Click(object sender, RoutedEventArgs e)
         {
-            string currentDepotRootPath = objectStoreComboBox.SelectedItem as string;
-
-            if (string.IsNullOrEmpty(currentDepotRootPath) || !Directory.Exists(currentDepotRootPath))
+            string depotRoot = objectStoreComboBox.SelectedItem as string;
+            if (string.IsNullOrEmpty(depotRoot) || !Directory.Exists(depotRoot))
                 return;
 
-            importFiles();
+            importFiles(depotRoot);
         }
 
         private void listDirectoryMenuItemClicked(object sender, RoutedEventArgs e)
@@ -339,6 +349,31 @@ namespace Viweer
 
                extractDirectoryTextBlock.Text = destinationDir;
 
+           }
+
+           private void viewFileLocationsMenuItemClicked(object sender, RoutedEventArgs e)
+           {
+               var selectedItem = filesInDir.SelectedItem;
+               Console.WriteLine(selectedItem.ToString());
+               DataRowView chosenRowData = selectedItem as DataRowView;
+               string filehash = chosenRowData.Row["filehash"].ToString();
+               chosenFileTextBlock.Text = filehash;
+               ListDirectoresForFile();
+
+           }
+
+           private void updateObjectStorePathMenuItem_Click(object sender, RoutedEventArgs e)
+           {
+
+               string objectStorePath = objectStoreListBox.SelectedValue as string;
+
+               string newPath = MpvUtilities.FilePickerUtility.PickDirectory();
+
+               if (string.IsNullOrEmpty(newPath) || ! Directory.Exists(newPath))
+                   return;
+
+               viweerHelper.updateObjectStoreLocation(objectStorePath, newPath);
+               
            }
     }
 }

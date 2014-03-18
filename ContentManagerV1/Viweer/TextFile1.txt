@@ -1,5 +1,11 @@
 ﻿Work on next:
 
+- split up main screen into different files, figure out how to have a single helper routine
+
+2) different thread for database operations, so can queue things up there.
+
+
+
 0) be able to open file from within app
 
 1) provide a link to/from deleted files: e.g. psd files link to flattened psd. 

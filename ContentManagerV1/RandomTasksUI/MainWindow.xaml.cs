@@ -182,10 +182,30 @@ namespace RandomTasksUI
                     // copy file. For now, don't overwrite, but really should check filesize!
                     if (!File.Exists(newFilePath))
                     {
-                        File.Copy(filePath, newFilePath);
+                        try
+                        {
+                            File.Copy(filePath, newFilePath);
 
-                        // update database with new location
-                        databaseHelper.AddFileLocation(filehash, objectStoreID);
+                            // update database with new location
+                            databaseHelper.AddFileLocation(filehash, objectStoreID);
+                        }
+                        catch
+                        {
+                            // error copying file, create error list
+                            // for now move to error location in objectStore
+                            // mark second location as ERROR for now so does not try to backup again
+                            string origObjectStoreRoot = Directory.GetParent(filePath).Parent.FullName;
+                            string errorDir = System.IO.Path.Combine(origObjectStoreRoot, "errors");
+                            if (!Directory.Exists(errorDir))
+                                Directory.CreateDirectory(errorDir);
+
+                            string errorFilePath = System.IO.Path.Combine(errorDir, filehash);
+                            File.Move(filePath, errorFilePath);
+
+                            // mark error in database
+                            string errorObjectStoreString = "ERRORS_FROM_" + origObjectStoreRoot;
+                            databaseHelper.MoveFileLocation(filehash, origObjectStoreRoot, errorObjectStoreString);
+                        }
                     }
                 }
             }

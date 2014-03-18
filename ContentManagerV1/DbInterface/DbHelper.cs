@@ -632,10 +632,10 @@ namespace DbInterface
             return (int)GetObjectStoreId(objectStorePath);
         }
 
-        private void doInsertForAddFreshLocation(string filename, int objectStoreID)
+        private void doInsertForAddFreshLocation(string filehash, int objectStoreID)
         {
             string insertCommandString =
-                    string.Format("insert into fileLocations (filehash, objectStore1) values (\"{0}\", {1})", filename, objectStoreID);
+                    string.Format("insert into fileLocations (filehash, objectStore1) values (\"{0}\", {1})", filehash, objectStoreID);
             db.ExecuteNonQuerySql(insertCommandString);
         }
 
@@ -709,16 +709,16 @@ namespace DbInterface
             return locationList;
         }
 
-        public void AddFileLocation(string filename, int objectStoreID)
+        public void AddFileLocation(string filehash, int objectStoreID)
         {
             // find any locations that exist already for this file
-            List<int> existingLocations = GetFileLocations(filename);
+            List<int> existingLocations = GetFileLocations(filehash);
 
             if (existingLocations == null)
             {
                 // filehash does not exist in table, insert it
                 NumOfNewFileLocations++;
-                doInsertForAddFreshLocation(filename, objectStoreID);
+                doInsertForAddFreshLocation(filehash, objectStoreID);
                 return;
             }
 
@@ -735,7 +735,7 @@ namespace DbInterface
             // TODO: in future will have an additional table to handle more than three location, maybe even more than two.
 
             NumOfNewFileLocations++;
-            InsertAdditionalFileLocation(filename, objectStoreID);
+            InsertAdditionalFileLocation(filehash, objectStoreID);
         }
 
         public void AddFileLocation(string filename, string objectStoreRoot)

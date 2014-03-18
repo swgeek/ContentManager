@@ -14,9 +14,8 @@ namespace Viweer
     class CViweer
     {
         DbHelper databaseHelper = null;
-        string currentFileHash = null;
-        int currentDepotId = -1;
-        string currentDepotRootPath = null;
+        //int currentDepotId = -1;
+        //string currentDepotRootPath = null;
 
 
         public CViweer(string dbFileName)
@@ -89,7 +88,7 @@ namespace Viweer
 
         public void DeleteFile(string filehash)
         {
-            databaseHelper.SetToDelete(currentFileHash);
+            databaseHelper.SetToDelete(filehash);
         }
 
         public DataView GetLargestFiles(bool todoFiles, bool todolaterFiles, bool todeleteFiles, bool deletedFiles)
@@ -122,44 +121,32 @@ namespace Viweer
             return true;
         }
 
-        public async Task HashFile(string filePath)
+        public async Task HashFile(string originalFilePath, string depotRoot)
         {
             await Task.Run(() =>
             {
-                string hashValue = SH1HashUtilities.HashFile(filePath);
-                string objectStoreFileName = DepotPathUtilities.GetHashFilePathV2(currentDepotRootPath, hashValue);
-                FileInfo fileInfo = new FileInfo(filePath);
+                string hashValue = SH1HashUtilities.HashFile(originalFilePath);
+                FileInfo fileInfo = new FileInfo(originalFilePath);
 
                 if (!databaseHelper.FileAlreadyInDatabase(hashValue, fileInfo.Length))
                 {
-                    CopyFile(filePath, hashValue);
-                    // TODO: add location, size, type, maybe modified date to db under hash value
-                    // TODO: add hashvalue to directory object in db. How to make directory key unique? Maybe add date or time of addition? not sure,
-                    // think this one through...
+                    string objectStoreFileName = DepotPathUtilities.GetHashFilePathV2(depotRoot, hashValue);
 
+                    if (File.Exists(objectStoreFileName))
+                        // technically this should not happen - we already checked the database. maybe throw an exception?
+                        throw new Exception(String.Format("File {0} already exists ", objectStoreFileName));
+
+                    File.Copy(originalFilePath, objectStoreFileName);
                     databaseHelper.AddFile(hashValue, fileInfo.Length);
+                    databaseHelper.AddFileLocation(hashValue, depotRoot);
                 }
-                // always add directory info even if file is in db already, as may be a different copy and name
 
+                // always add directory info even if file is in db already, as may be a different copy and name
                 // check this is correct call, have made some changes
-                databaseHelper.AddOriginalFileLocation(hashValue, filePath);
+                databaseHelper.AddOriginalFileLocation(hashValue, originalFilePath);
             });
         }
 
-        public void CopyFile(string filePath, string hashValue)
-        {
-            string objectStoreFileName = DepotPathUtilities.GetHashFilePathV2(currentDepotRootPath, hashValue);
-
-            if (File.Exists(objectStoreFileName))
-            {
-                // technically this should not happen - we already checked the database. maybe throw an exception?
-                throw new Exception(String.Format("File {0} already exists ", objectStoreFileName));
-            }
-            else
-            {
-                File.Copy(filePath, objectStoreFileName);
-            }
-        }
 
         public void SetDirectoryDeleteState(string dirpathHash)
         {
@@ -213,5 +200,59 @@ namespace Viweer
             }
         }
 
+        public bool updateObjectStoreLocation(string oldPath, string newPath)
+        {
+            int? id = databaseHelper.GetObjectStoreId(oldPath);
+
+            if (id == null)
+                return false;
+
+            databaseHelper.UpdateObjectStore((int)id, newPath);
+
+            if (databaseHelper.GetObjectStoreId(newPath) != id)
+                return false;
+
+            return true;
+        }
+
+        public void AddOriginalRootDirectory(string dirPath)
+        {
+            databaseHelper.AddOriginalRootDirectoryIfNotInDb(dirPath);
+        }
+
+        public void AddOriginalSubDirectory(string dirPath)
+        {
+            string parentDir = Directory.GetParent(dirPath).FullName;
+
+            string hashValue = SH1HashUtilities.HashString(dirPath);
+            string parentDirhashValue = SH1HashUtilities.HashString(parentDir);
+
+            if (!databaseHelper.DirectoryAlreadyInDatabase(hashValue))
+            {
+                databaseHelper.addDirectory(hashValue, dirPath);
+            }
+
+            if (!databaseHelper.DirectoryAlreadyInDatabase(parentDirhashValue))
+            {
+                databaseHelper.addDirectory(parentDirhashValue, parentDir);
+            }
+
+            if (!databaseHelper.DirSubdirMappingExists(parentDirhashValue, hashValue))
+                databaseHelper.AddDirSubdirMapping(parentDirhashValue, hashValue);
+
+        }
+
+
+
+
+        public string LogMessage()
+        {
+            string logText = "";
+            logText += "Files added to database: " + databaseHelper.NumOfNewFiles + Environment.NewLine;
+            logText += "Files not added as already in database: " + databaseHelper.NumOfDuplicateFiles + Environment.NewLine;
+            logText += "file locations added to database: " + databaseHelper.NumOfNewFileLocations + Environment.NewLine;
+            logText += "locations not added as already in database: " + databaseHelper.NumOfDuplicateFileLocations + Environment.NewLine;
+            return logText;
+        }
     }
 }
