@@ -30,8 +30,10 @@
                             <StackPanel Grid.Column="2" Margin="5">
                                 <Button Margin="5" Content="temporary task" Click="temporaryTaskButton_Click" />
                                 <Button Margin="5" Content="Delete Store" Click="deleteStoreButton_Click" />
+                                <Button Margin="5" Content="Delete Store and references" Click="deleteStoreAndReferencesButton_Click" />
                                 <Button Margin="5" Content="Repair Store" Click="repairStoreButton_Click" />
                                 <Button Margin="5" Content="Add New Store" Click="addStoreButton_Click" />
+                                <Button Margin="5" Content="Find Files Without Location" Click="fileLocationlessFilesButton_Click" />
                             </StackPanel>
                         </Grid>
                     </TabItem>
@@ -59,14 +61,17 @@
 
         <StackPanel Grid.Column="2" Orientation="Vertical">
             <Button Content="backup" Click="backupButton_Click"/>
-            <TextBlock Name="backupObjectStoreTextBlock" Visibility="Hidden" />
+            <Button Margin="5" Content="Move Store Contents" Click="MoveStoreContentsButton_Click" />
+            <Button Margin="5" Content="Try to find error files" Click="findErrorFilesButton_Click" />
+            <TextBlock Name="chosenObjectStorePathTextBlock" Visibility="Hidden" />
             <Button Name="startBackupButton" Content="Start Backup" Click="startBackupButton_Click" Visibility="Hidden" />
+            <Button Name="startMoveButton" Content="Start Move" Click="startMoveButton_Click" Visibility="Hidden" />
+            <Button Name="startFindErrorFilesButton" Content="Start Looking" Click="startFindErrorFilesButton_Click" Visibility="Hidden" />
 
-            <Button Margin="10" Content="Process ToDelete Directories" Click="processToDeleteDirectoriesButton_Click" />
+            <Button Margin="10" Content="Process Directories statusChanges" Click="processDirectoryStatusChangeButton_Click" />
 
             <Button Margin="10" Content="Perform Deletes" Click="deleteButton_Click" />
-            <Button Margin="10" Content="ExtractLargeCr2Files" Click="extractLargeCr2FilesButton_Click" />
-            <!--<Button Margin="10" Content="Create Table" Click="createTableButton_Click" />-->
+
         </StackPanel>
 
     </Grid>

@@ -129,8 +129,101 @@ namespace Viweer
             bool todoFiles = todoFilesChoice.IsChecked == true ? true: false;
             bool todeleteFiles = todeleteFilesChoice.IsChecked == true ? true : false; 
             bool todolaterFiles = todoLaterFilesChoice.IsChecked == true ? true : false; 
-            bool deletedFiles = deletedFilesChoice.IsChecked == true ? true : false; 
-            fileList.DataContext = viweerHelper.GetLargestFiles(todoFiles, todolaterFiles, todeleteFiles, deletedFiles);
+            bool deletedFiles = deletedFilesChoice.IsChecked == true ? true : false;
+
+            string inputExtensions = extensionsTextBox.Text;
+            string extensionString = FormatExtensionString(inputExtensions);
+
+            string inputSearchTerm = filenameSearchTextBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(inputSearchTerm))
+                inputSearchTerm = null;
+            string searchTermString = FormatSearchTerms(inputSearchTerm);
+
+            string statusString = FormatStatusString(todoFiles, todolaterFiles, todeleteFiles, deletedFiles);
+
+            fileList.DataContext = viweerHelper.GetLargestFiles(statusString, extensionString, searchTermString);
+        }
+
+        // move this and others to helper, should not be here
+        private string FormatStatusString(bool todoFiles, bool todolaterFiles, bool todeleteFiles, bool deletedFiles)
+        {
+            string statusString = "";
+            if (todoFiles)
+                statusString += "\'todo\', ";
+            if (todolaterFiles)
+                statusString += "\'todoLater\', ";
+            if (todeleteFiles)
+                statusString += "\'todelete\', ";
+            if (deletedFiles)
+                statusString += "\'deleted\', ";
+
+            statusString = statusString.TrimEnd(',', ' ');
+
+            if (statusString.Equals(""))
+                return null;
+            else
+                return statusString;
+        }
+
+        private string FormatExtensionString(string inputExtensions)
+        {
+            string[] extensions = inputExtensions.Split(new Char[] { ' ', ',', ';', ':', '\t' });
+            List<string> extensionList = new List<string>();
+            foreach (string ext in extensions)
+            {
+                if (string.IsNullOrWhiteSpace(ext))
+                    continue;
+
+                string extension = ext.Trim();
+
+                if (!extension.StartsWith("."))
+                    extension = "." + extension;
+
+                extension = "\"" + extension + "\"";
+
+                extensionList.Add(extension);
+            }
+
+            if ((extensionList.Count == 0) || (extensionList.Contains("\".*\"")))
+            {
+                return null;
+            }
+
+            string finalExtensionString = string.Join(",", extensionList);
+            return finalExtensionString;
+        }
+
+        private string FormatSearchTerms(string inputSearchString)
+        {
+            // for now only handle one search term
+            string newSearchString = inputSearchString.Trim();
+            if (newSearchString.Equals("*"))
+                return null;
+
+            newSearchString = "\'" + newSearchString + "\'";
+            return newSearchString;
+
+            //string[] searchTerms = inputSearchString.Split(new Char[] { ' ', ',', '\t' });
+            //List<string> searchTermList = new List<string>();
+            //foreach (string ext in searchTerms)
+            //{
+            //    if (string.IsNullOrWhiteSpace(ext))
+            //        continue;
+
+            //    string term = ext.Trim();
+
+            //    term = "\"" + term + "\"";
+
+            //    searchTermList.Add(term);
+            //}
+
+            //if ((searchTermList.Count == 0) || (searchTermList.Contains("\"*\"")))
+            //{
+            //    return null;
+            //}
+
+            //string finalSearchTermString = string.Join(",", searchTermList);
+            //return finalSearchTermString;
         }
 
         private void FillObjectStoreListBox()
@@ -178,7 +271,7 @@ namespace Viweer
 
             string dirpathHash = chosenRowData.Row.ItemArray[1] as string;
 
-            if (! viweerHelper.DeleteDirectory(dirpathHash, dirpath))
+            if (!viweerHelper.MarkDirectoryTodoLater(dirpathHash, dirpath, "todelete"))
                 MessageBox.Show("Problem: could not delete directory " + dirpath, "Problem", MessageBoxButton.OK);
         }
 
@@ -224,9 +317,11 @@ namespace Viweer
 
         }
 
-        async private void importFiles(string depotRoot)
+        async private void importFiles(string depotRoot, bool setAsLink, bool moveInsteadOfCopy)
         {
             string rootDir = directoryToImportTextBlock.Text;
+
+            List<string> directoryList = new List<string>();
 
             // Should I check if there is space in the object store and give a message? Not sure...
 
@@ -234,7 +329,7 @@ namespace Viweer
                 return;
 
             viweerHelper.AddOriginalRootDirectory(rootDir);
-
+            directoryList.Add(rootDir);
 
             while ((stopProcessing == false) && (filelist != null) && (filelist.Count > 0))
             {
@@ -242,12 +337,16 @@ namespace Viweer
 
                 if (System.IO.Directory.Exists(currentPath))
                 {
-                    if (! currentPath.Equals(rootDir))
+                    if (!currentPath.Equals(rootDir))
+                    {
                         viweerHelper.AddOriginalSubDirectory(currentPath);
+                        directoryList.Add(currentPath);
+                        // also have to update subdirListingForDir and fileListingForDir. How to do that?
+                    }
                 }
                 else if (System.IO.File.Exists(currentPath))
                 {
-                    await viweerHelper.HashFile(currentPath, depotRoot);
+                    await viweerHelper.HashFile(currentPath, depotRoot, setAsLink, moveInsteadOfCopy);
                 }
                 else
                 {
@@ -258,18 +357,45 @@ namespace Viweer
                 countRemainingTextBlock.Text = filelist.Count.ToString();
             }
 
+            // work with directoryList
+            foreach (string dirPath in directoryList)
+            {
+                viweerHelper.UpdateDirListing(dirPath);
+            }
+
             reportTextBox.Text = viweerHelper.LogMessage();
         }
 
         private void startImportButton_Click(object sender, RoutedEventArgs e)
         {
+
+            bool moveInsteadOfCopy = false;
+
+            if (moveCheckBox.IsChecked == true)
+                moveInsteadOfCopy = true; 
+            
             string depotRoot = objectStoreComboBox.SelectedItem as string;
             if (string.IsNullOrEmpty(depotRoot) || !Directory.Exists(depotRoot))
                 return;
 
-            importFiles(depotRoot);
+            importFiles(depotRoot, false, moveInsteadOfCopy);
         }
 
+        private void startLinkImportButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Most of this is common code, move elsewhere
+            // maybe get rid of the extra button and use a checkbox instead, so just have an import button
+            bool moveInsteadOfCopy = false;
+            if (moveCheckBox.IsChecked == true)
+                moveInsteadOfCopy = true;
+
+            string depotRoot = objectStoreComboBox.SelectedItem as string;
+            if (string.IsNullOrEmpty(depotRoot) || !Directory.Exists(depotRoot))
+                return;
+
+            importFiles(depotRoot, true, moveInsteadOfCopy);
+
+        }
         private void listDirectoryMenuItemClicked(object sender, RoutedEventArgs e)
         {
             var selectedItem = subdirsInDir.SelectedItem;
@@ -310,7 +436,10 @@ namespace Viweer
             {
                 string filehash = row["filehash"] as string;
                 string filename = row["filename"] as string;
-                viweerHelper.ExtractFile(filehash, filename, destinationDir);
+                string status = row["status"] as string;
+                //if ((status != "deleted") && (status != "replacedByLink"))
+                if (status == "todo")
+                    viweerHelper.ExtractFile(filehash, filename, destinationDir);
 
             }
 
@@ -320,10 +449,10 @@ namespace Viweer
 
         }
 
-           private void processDeleteDirButton_Click(object sender, RoutedEventArgs e)
-        {
-            viweerHelper.MarkFilesInToDeleteDirectories();
-        }
+        //   private void processDeleteDirButton_Click(object sender, RoutedEventArgs e)
+        //{
+        //    viweerHelper.MarkFilesInToDeleteDirectories();
+        //}
 
            private void objectStoreList_SelectionChanged(object sender, SelectionChangedEventArgs e)
            {
@@ -374,6 +503,97 @@ namespace Viweer
 
                viweerHelper.updateObjectStoreLocation(objectStorePath, newPath);
                
+           }
+
+           private void extractWithHashNameButton_Click(object sender, RoutedEventArgs e)
+           {
+               string destinationDir = extractDirectoryTextBlock.Text;
+
+               if (string.IsNullOrEmpty(destinationDir))
+                   return;
+
+               foreach (var selectedItem in fileList.SelectedItems)
+               {
+                   DataRowView trythis = selectedItem as DataRowView;
+                   string filehash = trythis.Row.ItemArray[0] as string;
+                   string filename = viweerHelper.GetFirstFilename(filehash);
+                   string extension = System.IO.Path.GetExtension(filename);
+                   string extractFilename = filehash + extension;
+                   viweerHelper.ExtractFile(filehash, extractFilename, destinationDir);
+               }
+
+               Process.Start(extractDirectoryTextBlock.Text);
+           }
+
+           private void startDeleteCorrespondingButton_Click(object sender, RoutedEventArgs e)
+           {
+               MessageBoxResult choice = MessageBox.Show("Delete these files?", "delete?", MessageBoxButton.OKCancel);
+               if (choice != MessageBoxResult.OK)
+                   return;
+
+               updateStatusForCorrespondingFiles("todelete");
+           }
+
+
+           private void getRootDirsButton_Click(object sender, RoutedEventArgs e)
+           {
+               rootDirsListBox.IsEnabled = true;
+               rootDirsListBox.DataContext = viweerHelper.GetRootDirectories();
+           }
+
+           private void rootDirsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+           {
+
+           }
+
+           private void todoLaterDirectoryMenuItemClicked(object sender, RoutedEventArgs e)
+           {
+               var selectedItem = dirList.SelectedItem;
+               Console.WriteLine(selectedItem.ToString());
+               DataRowView chosenRowData = selectedItem as DataRowView;
+               string dirpath = chosenRowData.Row.ItemArray[0] as string;
+
+               MessageBoxResult choice = MessageBox.Show("mark dir " + dirpath + " todo later?", "todolater?", MessageBoxButton.OKCancel);
+               if (choice != MessageBoxResult.OK)
+                   return;
+
+               string dirpathHash = chosenRowData.Row.ItemArray[1] as string;
+
+               if (!viweerHelper.MarkDirectoryTodoLater(dirpathHash, dirpath, "todoLater"))
+                   MessageBox.Show("Problem: could not update directory " + dirpath, "Problem", MessageBoxButton.OK);
+           }
+
+           private void setToLaterCorrespondingButton_Click(object sender, RoutedEventArgs e)
+           {
+
+               MessageBoxResult choice = MessageBox.Show("set these files todo Later?", "todolater?", MessageBoxButton.OKCancel);
+               if (choice != MessageBoxResult.OK)
+                   return;
+
+               updateStatusForCorrespondingFiles("todoLater");
+           }
+
+           async private void updateStatusForCorrespondingFiles(string newStatus)
+           {
+               string rootDir = directoryToImportTextBlock.Text;
+
+               if (!Directory.Exists(rootDir))
+                   return;
+
+               while ((stopProcessing == false) && (filelist != null) && (filelist.Count > 0))
+               {
+                   string currentPath = filelist.CurrentFile();
+
+                   // just deleting files, not directories
+                   if (System.IO.File.Exists(currentPath))
+                   {
+                       await viweerHelper.UpdateStatusForCorrespondingFile(currentPath, newStatus);
+                   }
+
+                   filelist.RemoveCurrentFile();
+                   countRemainingTextBlock.Text = filelist.Count.ToString();
+               }
+               reportTextBox.Text = viweerHelper.LogMessage();
            }
     }
 }

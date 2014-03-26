@@ -8,12 +8,16 @@
         <TabControl  HorizontalAlignment="Stretch"  Grid.Column="1">
             <TabItem Header="Import" Name="importTab" Background="LightGray">
                 <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="0*"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    
-                    <StackPanel Orientation="Horizontal" Margin="10">
+
+                    <StackPanel Orientation="Horizontal" Margin="8,10,9.8,10" Grid.Column="1">
                         <!-- want drop down lists for primary and secondary stores, button and textbox to choose dir to import -->
                         <TextBlock Text="Target object store: " Margin="5" />
                         <ComboBox Name="objectStoreComboBox" Loaded="ComboBox_Loaded" Margin="5 5 25 5" />
@@ -22,12 +26,16 @@
                         <Button Content="List files to import" Margin="5" Click="listImportFilesButton_Click" />
                     </StackPanel>
 
-                    <StackPanel Name="fileListStackPanel" Visibility="Collapsed" Orientation="Horizontal" Margin="10" Grid.Row="1">
+                    <StackPanel Name="fileListStackPanel" Visibility="Collapsed" Orientation="Horizontal" Margin="8,10,9.8,10" Grid.Row="1" Grid.Column="1">
                         <ListBox Name="filesToImportListBox" />
                         <StackPanel>
                             <TextBlock Text="number of files remaining:" />
                             <TextBlock Name="countRemainingTextBlock" Margin="5 5 5 25"/>
-                            <Button Content="Import Files" Margin="5" Click="startImportButton_Click" />
+                            <Button Content="Import Files" Margin="20" Click="startImportButton_Click" />
+                            <Button Content="Import As Links" Margin="20" Click="startLinkImportButton_Click" />
+                            <Button Content="Delete corresponding files" Margin="20" Click="startDeleteCorrespondingButton_Click" />
+                            <Button Content="set corresponding files todo later" Margin="20" Click="setToLaterCorrespondingButton_Click" />
+                            <CheckBox Name="moveCheckBox" Content="Move instead of Copy" />
                         </StackPanel>
                         <TextBox Name="reportTextBox" />
                     </StackPanel>
@@ -40,7 +48,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-        
+
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="7*" />
@@ -64,7 +72,7 @@
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Margin="3" Text="{Binding id}" />
-                                            <TextBlock Margin="3" Text="{Binding dirPath}"/>  
+                                            <TextBlock Margin="3" Text="{Binding dirPath}"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
@@ -74,7 +82,13 @@
                                           CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=dirPath}">
                                         </MenuItem>
                                     </ContextMenu>
-                                </ListBox.ContextMenu>              
+                                </ListBox.ContextMenu>
+                            </ListBox>
+                            
+                            <Button Content="Get Root Directories" Click="getRootDirsButton_Click" />
+                            <ListBox IsEnabled="False" Name="rootDirsListBox" Background="LightBlue" 
+                                     SelectionChanged="rootDirsList_SelectionChanged" ItemsSource="{Binding}">
+                                
                             </ListBox>
                         </StackPanel>
                     </Grid>
@@ -82,18 +96,19 @@
 
                     <!-- top pane -->
                     <Grid Background="LightGray" Grid.Row="0" Grid.Column="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="2*" />
-                            <ColumnDefinition Width="2*" />
-                            <ColumnDefinition Width="*" />
-
-                        </Grid.ColumnDefinitions>
 
                         <StackPanel Orientation="Horizontal" >
                             <CheckBox Name="todoFilesChoice"  Content="todo" IsChecked="True"/>
                             <CheckBox Name="todeleteFilesChoice" Content="toDelete"/>
                             <CheckBox Name="todoLaterFilesChoice" Content="todo later" />
                             <CheckBox Name="deletedFilesChoice" Content="deleted" />
+                            <TextBlock Margin="20  0 20 0" />
+                            <TextBlock Text="extensions:" Margin="5" IsEnabled="True"/>
+                            <TextBox Name="extensionsTextBox" Text="*             " />
+                            <TextBlock Margin="10  0 10 0" />
+                            <TextBlock Text="filename search:" Margin="5" IsEnabled="True"/>
+                            <TextBox Name="filenameSearchTextBox" Text="*             " />
+                            <Button Background="Green" Name="goButton" Content="Go" Click="goButton_Click" />
                         </StackPanel>
 
                         <!--<StackPanel>
@@ -101,44 +116,44 @@
                     <RadioButton GroupName="trythis" Content="smallest files" />
                 </StackPanel>-->
 
-                        <Button Grid.Column="24" Name="goButton" Content="Go" Click="goButton_Click" />
+                       
 
 
                     </Grid>
 
                     <Grid Grid.Row="1" Grid.Column="1">
 
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="2*" />
-                        <ColumnDefinition Width="2*" />
-                    </Grid.ColumnDefinitions>
-   
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <ListView Margin="5" Grid.RowSpan="2"  ItemsSource="{Binding}" x:Name="fileList" SelectionChanged="fileList_SelectionChanged">
-                        <ListView.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="Menu Item" Click="deleteMenuItem_Click" 
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="2*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <ListView Margin="5" Grid.RowSpan="2"  ItemsSource="{Binding}" x:Name="fileList" SelectionChanged="fileList_SelectionChanged">
+                            <ListView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Menu Item" Click="deleteMenuItem_Click" 
                                           CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=filehash}">
-                                </MenuItem>
-                                <MenuItem Header="Menu Item" Click="markToDoLaterMenuItem_Click">mark todo later</MenuItem>
-                            </ContextMenu>
-                        </ListView.ContextMenu>
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn Width="42" Header="hash" DisplayMemberBinding="{Binding Path=filehash}" />
-                                <GridViewColumn Width="40" Header="status" DisplayMemberBinding="{Binding Path=status}" />                    
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
+                                    </MenuItem>
+                                    <MenuItem Header="Menu Item" Click="markToDoLaterMenuItem_Click">mark todo later</MenuItem>
+                                </ContextMenu>
+                            </ListView.ContextMenu>
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Width="42" Header="hash" DisplayMemberBinding="{Binding Path=filehash}" />
+                                    <GridViewColumn Width="40" Header="status" DisplayMemberBinding="{Binding Path=status}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
 
                         <!-- Chosen filehash and associated directories + filenames -->
                         <StackPanel Margin="5" Grid.RowSpan="2" Grid.Column="1">
@@ -152,6 +167,7 @@
                                     <ContextMenu>
                                         <MenuItem Header="delete this directory" Click="deleteDirectoryMenuItemClicked" />
                                         <MenuItem Header="extract directory" Click="extractDirectoryMenuItemClicked" />
+                                        <MenuItem Header="set directory todoLater" Click="todoLaterDirectoryMenuItemClicked" />
                                     </ContextMenu>
                                 </ListView.ContextMenu>
                                 <ListView.View>
@@ -166,29 +182,29 @@
                         </StackPanel>
 
                         <ScrollViewer Grid.Column="2" Grid.RowSpan="2">
-                        <StackPanel Margin="5" >
-                            
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Directory: " /> 
-                                <TextBlock Name="DirNameTextBlock" />
-                            </StackPanel>
+                            <StackPanel Margin="5" >
 
- 
-                            
-                        <ListView Margin="5"  ItemsSource="{Binding}" x:Name="subdirsInDir">
-                                <ListView.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="list contents" Click="listDirectoryMenuItemClicked" />
-                                    </ContextMenu>
-                                </ListView.ContextMenu>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Directory: " />
+                                    <TextBlock Name="DirNameTextBlock" />
+                                </StackPanel>
 
-                                <ListView.View>
-                                    <GridView>
-                                        <GridViewColumn Width="200" Header="subdirsInDir" DisplayMemberBinding="{Binding Path=dirPath}" />
-                                        <GridViewColumn Width="200" Header="status" DisplayMemberBinding="{Binding Path=status}" />
-                                    </GridView>
-                                </ListView.View>
-                            </ListView>
+
+
+                                <ListView Margin="5"  ItemsSource="{Binding}" x:Name="subdirsInDir">
+                                    <ListView.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="list contents" Click="listDirectoryMenuItemClicked" />
+                                        </ContextMenu>
+                                    </ListView.ContextMenu>
+
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Width="200" Header="subdirsInDir" DisplayMemberBinding="{Binding Path=dirPath}" />
+                                            <GridViewColumn Width="200" Header="status" DisplayMemberBinding="{Binding Path=status}" />
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
 
                                 <ListView Margin="5" ItemsSource="{Binding}" x:Name="filesInDir">
                                     <ListView.ContextMenu>
@@ -205,20 +221,20 @@
                                 </ListView>
                             </StackPanel>
                         </ScrollViewer>
-                        
-                        
-                        
-                    <Button Margin="5" Content="Extract selected file" Click="OnExtractFile" Grid.Row="3" />
-                    <!--<Button Margin="5" Content="Extract all files from directory" Click="OnExtractDir" Grid.Row="3" Grid.Column="1"/>-->
-                    <Button Margin="5" Content="process delete Dirs" Click="processDeleteDirButton_Click" Grid.Row="4" Grid.Column="1"/>
-                    <Button Margin="5" Content="delete selected file" Click="OnDeleteFile" Grid.Row="4" />
-                    <Button Margin="5" Content="mark as later" Click="OnLaterFile" Grid.Row="5" />
-                    <!--<Button Margin="5" Content="delete selected directory and contents" Click="OnDeleteDir" Grid.Row="4" />-->
 
-                    <!--<Button Margin="5" Click="OnExtractAllButtonClick" Grid.Row="5" Grid.Column="0">ExtractAllFiles</Button>-->
 
-                    <Button Margin="5" Click="OnExtractDirButtonClick" Grid.Row="5" Grid.Column="1">destination folder</Button>
-                            <TextBlock Margin="5" Name="extractDirectoryTextBlock"  Grid.Row="5"  Grid.Column="2" />            
+
+                        <Button Margin="5" Content="Extract selected file" Click="OnExtractFile" Grid.Row="3" />
+                        <Button Margin="5" Content="Extract with hash name" Click="extractWithHashNameButton_Click" Grid.Row="3" Grid.Column="1"/>
+                        <!--<Button Margin="5" Content="process delete Dirs" Click="processDeleteDirButton_Click" Grid.Row="4" Grid.Column="1"/>-->
+                        <Button Margin="5" Content="delete selected file" Click="OnDeleteFile" Grid.Row="4" />
+                        <Button Margin="5" Content="mark as later" Click="OnLaterFile" Grid.Row="5" />
+                        <!--<Button Margin="5" Content="delete selected directory and contents" Click="OnDeleteDir" Grid.Row="4" />-->
+
+                        <!--<Button Margin="5" Click="OnExtractAllButtonClick" Grid.Row="5" Grid.Column="0">ExtractAllFiles</Button>-->
+
+                        <Button Margin="5" Click="OnExtractDirButtonClick" Grid.Row="5" Grid.Column="1">destination folder</Button>
+                        <TextBlock Margin="5" Name="extractDirectoryTextBlock"  Grid.Row="5"  Grid.Column="2" />
                     </Grid>
                 </Grid>
             </TabItem>

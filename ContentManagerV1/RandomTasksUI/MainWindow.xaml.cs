@@ -119,7 +119,51 @@ namespace RandomTasksUI
 
         private void temporaryTaskButton_Click(object sender, RoutedEventArgs e)
         {
+            //databaseHelper.DeleteLinkFiles();
+            //databaseHelper.createLinkTable();
            // databaseHelper.TransferDataToNewVersionOfTable();
+
+            //databaseHelper.SetErrorState();
+
+            //databaseHelper.TemporarySetLinkStatusForAllFilesInLinkTable();
+
+            TempFixErrorStateStuff();
+        }
+
+        public void TempFixErrorStateStuff()
+        {
+            // Lot of hard coded stuff here. Ok for now, temp fixit code, but change once reuse.
+            string objectStoreRoot = @"G:\objectstore1";
+            List<string> errorStateFiles = databaseHelper.TempGetErrorStateFiles();
+            
+            // check if file exists on drive, be safe by actually hashing the file
+            // if no, remove location 1 from list
+            // if yes, change error state to "todo" and remove location error from list
+
+            foreach (string filehash in errorStateFiles)
+            {
+                string filepath = DepotPathUtilities.GetExistingFilePath(objectStoreRoot, filehash);
+
+                if (filepath == null)
+                {
+                    // does not exist in this objectstore, remove location
+                    databaseHelper.ReplaceFileLocation(filehash, 1, 23);
+                }
+                if (File.Exists(filepath))
+                {
+                    string sanitycheckHashValue = MpvUtilities.SH1HashUtilities.HashFile(filepath);
+                    if (sanitycheckHashValue.Equals(filehash))
+                    {
+
+
+                    }
+                    else
+                    {
+                        throw new Exception("hash values do not match");
+                    }
+                }
+            }
+ 
         }
 
         private void repairStoreButton_Click(object sender, RoutedEventArgs e)
@@ -141,7 +185,7 @@ namespace RandomTasksUI
 
         private void startBackupButton_Click(object sender, RoutedEventArgs e)
         {
-            string objectStoreRoot = backupObjectStoreTextBlock.Text;
+            string objectStoreRoot = chosenObjectStorePathTextBlock.Text;
             if ((objectStoreRoot == null) || (!Directory.Exists(objectStoreRoot)))
                 return;
 
@@ -154,7 +198,8 @@ namespace RandomTasksUI
 
             while (spaceAvailable)
             {
-                List<String> fileList = databaseHelper.GetUndeletedFilesWithOnlyOneLocation(1000);
+                // temporary
+                List<String> fileList = databaseHelper.GetUndeletedFilesWithOnlyOneLocation(4000);
                 foreach (string filehash in fileList)
                 {
                     // get object store path
@@ -201,10 +246,13 @@ namespace RandomTasksUI
 
                             string errorFilePath = System.IO.Path.Combine(errorDir, filehash);
                             File.Move(filePath, errorFilePath);
+                            databaseHelper.AddFileLocation(filehash, objectStoreID);
 
                             // mark error in database
                             string errorObjectStoreString = "ERRORS_FROM_" + origObjectStoreRoot;
                             databaseHelper.MoveFileLocation(filehash, origObjectStoreRoot, errorObjectStoreString);
+                            databaseHelper.AddFileLocation(filehash, "ERROR");
+                            databaseHelper.setFileStatus(filehash, "error");
                         }
                     }
                 }
@@ -217,17 +265,17 @@ namespace RandomTasksUI
             string dirName = MpvUtilities.FilePickerUtility.PickDirectory();
             if ((dirName != null) && (Directory.Exists(dirName)))
             {
-                backupObjectStoreTextBlock.Visibility = System.Windows.Visibility.Visible;
-                backupObjectStoreTextBlock.Text = dirName;
+                chosenObjectStorePathTextBlock.Visibility = System.Windows.Visibility.Visible;
+                chosenObjectStorePathTextBlock.Text = dirName;
                 startBackupButton.Visibility = System.Windows.Visibility.Visible;
             }
 
         }
 
-        private void SetDirectoryDeleteState(string dirpathHash)
+        private void SetDirectoryStatus(string dirpathHash, string newStatus)
         {
             string status = databaseHelper.GetStatusOfDirectory(dirpathHash);
-            if (status.Equals("deleted"))
+            if (status.Equals("deleted") || status.Equals("replacedByLink"))
                 return;
 
             bool canMarkDirectoryAsDeleted = true;
@@ -237,10 +285,10 @@ namespace RandomTasksUI
 
             foreach (string subDirPathHash in subDirs)
             {
-                SetDirectoryDeleteState(subDirPathHash);
+                SetDirectoryStatus(subDirPathHash, newStatus);
 
-                string newStatus = databaseHelper.GetStatusOfDirectory(subDirPathHash);
-                if (!newStatus.Equals("deleted"))
+                string subdirState = databaseHelper.GetStatusOfDirectory(subDirPathHash);
+                if (!( subdirState.Equals("deleted") || subdirState.Equals("replacedByLink")))
                     canMarkDirectoryAsDeleted = false;
             }
 
@@ -253,9 +301,9 @@ namespace RandomTasksUI
                 {
                     canMarkDirectoryAsDeleted = false;
 
-                    if (!fileStatus.Equals("todelete"))
+                    if (! (fileStatus.Equals("deleted") || fileStatus.Equals("replacedByLink")))
                     {
-                        databaseHelper.setFileStatus(filehash, "todelete");
+                        databaseHelper.setFileStatus(filehash, newStatus);
                     }
                 }
             }
@@ -265,21 +313,24 @@ namespace RandomTasksUI
 
         }
 
-        private void MarkFilesInToDeleteDirectories()
+        private void PropogateStatusChangesforDirectories()
         {
-            List<string> dirList = databaseHelper.GetDirPathHashListForToDeleteDirectories();
-
+            List<string> dirList = databaseHelper.GetDirPathHashListForDirectoriesWithStatus("todelete");
 
             foreach (string dirpathHash in dirList)
             {
-                SetDirectoryDeleteState(dirpathHash);
+                SetDirectoryStatus(dirpathHash, "todelete");
+            }
+
+            dirList = databaseHelper.GetDirPathHashListForDirectoriesWithStatus("todoLater");
+
+            foreach (string dirpathHash in dirList)
+            {
+                SetDirectoryStatus(dirpathHash, "todoLater");
             }
         }
 
-        private void processToDeleteDirectoriesButton_Click(object sender, RoutedEventArgs e)
-        {
-            MarkFilesInToDeleteDirectories();
-        }
+ 
 
         private void createTableButton_Click(object sender, RoutedEventArgs e)
         {
@@ -289,13 +340,16 @@ namespace RandomTasksUI
         private void deleteButton_Click(object sender, RoutedEventArgs e)
         {
             // make sure files in "todelete" subdirectories are marked for delete
-            MarkFilesInToDeleteDirectories();
+            PropogateStatusChangesforDirectories();
 
             List<string> todeleteFileList = databaseHelper.GetListOfFilesToDelete();
 
             foreach (string filehash in todeleteFileList)
             {
                 List<string> objectStoresForFile = databaseHelper.GetObjectStorePathsForFile(filehash);
+
+                if (objectStoresForFile == null)
+                    continue; // just skip for now, but should investigate at some point
                 // make a copy so can remove items without causing a problem with my foreach loop
                 List<string> objectStoresForFileCopy = new List<string>(objectStoresForFile);
 
@@ -317,22 +371,255 @@ namespace RandomTasksUI
                 }
 
                 if (objectStoresForFile.Count == 0)
-                {   
+                {
                     // yay, removed all copies
                     databaseHelper.setFileStatus(filehash, "deleted");
                 }
             }
  
             // update directories where all files have been deleted
-            MarkFilesInToDeleteDirectories();
+            PropogateStatusChangesforDirectories();
 
         }
 
-        private void extractLargeCr2FilesButton_Click(object sender, RoutedEventArgs e)
+        private void deleteStoreAndReferencesButton_Click(object sender, RoutedEventArgs e)
+        {
+
+            string message = "This will delete the object store " + "" + "  and references";
+
+            if (MessageBox.Show(message, "Delete?", MessageBoxButton.OKCancel) != MessageBoxResult.OK)
+                return;
+
+
+            int objectStoreIdToDelete;
+            string objectStoreRootToDelete;
+            GetChosenObjectStore(out objectStoreIdToDelete, out objectStoreRootToDelete);
+
+            // make sure files in "todelete" subdirectories are marked for delete
+            PropogateStatusChangesforDirectories();
+
+            // very inefficient to do this, should query to get only list for files in this object store, 
+            // but not worth writing extra code for something that happens only rarely
+            List<string> todeleteFileList = databaseHelper.GetListOfFilesToDelete();
+
+            foreach (string filehash in todeleteFileList)
+            {
+                List<string> objectStoresForFile = databaseHelper.GetObjectStorePathsForFile(filehash);
+                // make a copy so can remove items without causing a problem with my foreach loop
+                List<string> objectStoresForFileCopy = new List<string>(objectStoresForFile);
+
+                foreach (string objectStoreRoot in objectStoresForFileCopy)
+                {
+                    if (objectStoreRoot.Equals(objectStoreRootToDelete))
+                    {
+                        // remove this location
+                        databaseHelper.ReplaceFileLocation(filehash, objectStoreIdToDelete, null);
+                        objectStoresForFile.Remove(objectStoreRoot);
+                    }
+                }
+
+                if (objectStoresForFile.Count == 0)
+                {
+                    // no other copies
+                    databaseHelper.setFileStatus(filehash, "deleted");
+                }
+            }
+
+            bool deleted = databaseHelper.DeleteObjectStore(objectStoreIdToDelete);
+            if (!deleted)
+                MessageBox.Show("could not delete, some files have that store as their only location", "problem", MessageBoxButton.OK);
+            else
+                outputTextBox.Text = "Deleted object store " + objectStoreIdToDelete;
+        }
+
+        private void GetChosenObjectStore(out int objectStoreId, out string objectStoreRoot)
+        {
+            DataRowView selectedRow = objectStoreList.SelectedItem as DataRowView;
+            var id = (Int64)selectedRow.Row.ItemArray[0];
+
+            objectStoreId = (int)id;
+            objectStoreRoot = selectedRow.Row["dirPath"].ToString();
+        }
+
+        private void MoveStoreContentsButton_Click(object sender, RoutedEventArgs e)
+        {
+            UserChooseObjectStoreRoot();
+            startMoveButton.Visibility = System.Windows.Visibility.Visible;
+        }
+
+
+        private void startMoveButton_Click(object sender, RoutedEventArgs e)
+        {
+            string destinationObjectStoreRoot = chosenObjectStorePathTextBlock.Text;
+            if ((destinationObjectStoreRoot == null) || (!Directory.Exists(destinationObjectStoreRoot)))
+                return;
+
+            int destinationStoreID = databaseHelper.CheckObjectStoreExistsAndInsertIfNot(destinationObjectStoreRoot);
+            string drivePath = System.IO.Path.GetPathRoot(destinationObjectStoreRoot);
+            DriveInfo driveInfo = new DriveInfo(drivePath);
+
+            const long minExtraSpaceToLeave = 20000000000;
+            bool spaceAvailable = driveInfo.AvailableFreeSpace > minExtraSpaceToLeave;
+
+            if (!spaceAvailable)
+                return;
+
+            DataRowView selectedRow = objectStoreList.SelectedItem as DataRowView;
+            var id = (Int64)selectedRow.Row.ItemArray[0];
+
+            int sourceStoreId = (int)id;
+            string sourceStorePath = selectedRow.Row["dirPath"].ToString();
+            DirectoryInfo rootDirInfo = new DirectoryInfo(sourceStorePath);
+
+            foreach (DirectoryInfo subDirInfo in rootDirInfo.GetDirectories() )
+            {
+                if (! spaceAvailable)
+                    break;
+
+                List<FileInfo> fileList = subDirInfo.GetFiles().ToList();
+
+                // temp, to save time on exceptions
+                if (fileList.Count < 70)
+                    continue;
+
+                foreach (FileInfo fileInfo in fileList)
+                {
+                     if (driveInfo.AvailableFreeSpace < (minExtraSpaceToLeave + fileInfo.Length))
+                        {
+                            spaceAvailable = false;
+                            break;
+                        }
+
+                    string filehash = fileInfo.Name;
+                    List<int> fileLocations = databaseHelper.GetFileLocations(filehash);
+
+                    if (fileLocations == null)
+                        continue; // not in database, simply ignore this file
+
+                    if (fileLocations.Contains(destinationStoreID))
+                    {
+                        if (DeleteFile(fileInfo))
+                            databaseHelper.ReplaceFileLocation(filehash,sourceStoreId, null);
+                    }
+                    else
+                    {
+                        // skip the copies for now, doing the dups first
+                        string newFilePath = DepotPathUtilities.GetHashFilePathV2(destinationObjectStoreRoot, filehash);
+
+                        // check space
+                        long tempValue = driveInfo.AvailableFreeSpace;                
+                        if (driveInfo.AvailableFreeSpace < (minExtraSpaceToLeave + fileInfo.Length))
+                        {
+                            spaceAvailable = false;
+                            break;
+                        }
+
+                        // this part needs to be a single transaction, should change sometime. Will risk for now...
+                        if (MoveFile(fileInfo, newFilePath))
+                            databaseHelper.ReplaceFileLocation(filehash, sourceStoreId, destinationStoreID);
+                    }
+                }
+            }
+        }
+
+
+        public bool MoveFile(FileInfo fileInfo, string newFilePath)
+        {
+            if (File.Exists(newFilePath))
+                throw new Exception("file already exists"); // inconsistency in database!
+
+            try
+            {
+                fileInfo.MoveTo(newFilePath);
+            }
+            catch
+            {
+                // error copying file
+                // for now just skip this file
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool DeleteFile(FileInfo fileInfo)
+        {
+            try
+            {
+                fileInfo.Delete();
+            }
+            catch
+            {
+                // error deleting file
+                // for now just skip this file
+                return false;
+            }
+
+            return true;
+        }
+
+        private void findErrorFilesButton_Click(object sender, RoutedEventArgs e)
+        {
+            UserChooseObjectStoreRoot();
+            startFindErrorFilesButton.Visibility = System.Windows.Visibility.Visible;
+        }
+
+        private void UserChooseObjectStoreRoot()
+        {
+            string dirName = MpvUtilities.FilePickerUtility.PickDirectory();
+            if ((dirName != null) && (Directory.Exists(dirName)))
+            {
+                chosenObjectStorePathTextBlock.Visibility = System.Windows.Visibility.Visible;
+                chosenObjectStorePathTextBlock.Text = dirName;
+            }
+        }
+
+        private void startFindErrorFilesButton_Click(object sender, RoutedEventArgs e)
+        {
+            string backupStoreRoot = chosenObjectStorePathTextBlock.Text;
+            int objectStoreId;
+            string objectStorePath;
+            GetChosenObjectStore(out objectStoreId, out objectStorePath);
+            // get list of error files
+            // for each file, check if in store
+            // if yes, copy to current store and update location
+            // if no, just skip, nothing special
+            List<string> errorFiles = databaseHelper.TempGetErrorStateFiles();
+
+            foreach (string filehash in errorFiles)
+            {
+                if (System.IO.Path.HasExtension(filehash))
+                {
+                    string extension = System.IO.Path.GetExtension(filehash);
+                    // should remove from database here...
+                    databaseHelper.RemoveFileCompletely(filehash);
+                    continue;
+                }
+                string filepath = DepotPathUtilities.GetExistingFilePath(backupStoreRoot, filehash);
+                if (File.Exists(filepath))
+                {
+                    string objectStoreFileName = DepotPathUtilities.GetHashFilePathV2(objectStorePath, filehash);
+
+                    if (File.Exists(objectStoreFileName))
+                        continue;
+                        // technically this should not happen - we already checked the database. maybe throw an exception?
+                       // throw new Exception(String.Format("File {0} already exists ", objectStoreFileName));
+
+                    File.Copy(filepath, objectStoreFileName);
+
+                    databaseHelper.ReplaceFileLocation(filehash, 23, objectStoreId);
+                }
+            }
+        }
+
+        private void fileLocationlessFilesButton_Click(object sender, RoutedEventArgs e)
         {
 
         }
 
-
+        private void processDirectoryStatusChangeButton_Click(object sender, RoutedEventArgs e)
+        {
+            PropogateStatusChangesforDirectories();
+        }
     }
 }

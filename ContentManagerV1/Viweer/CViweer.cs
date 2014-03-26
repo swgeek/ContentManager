@@ -63,6 +63,9 @@ namespace Viweer
 
             List<string> locations = databaseHelper.GetObjectStorePathsForFile(fileHash);
 
+            if (locations == null)
+                return false;
+
             string filePath = null;
             foreach (string location in locations)
             {
@@ -91,12 +94,14 @@ namespace Viweer
             databaseHelper.SetToDelete(filehash);
         }
 
-        public DataView GetLargestFiles(bool todoFiles, bool todolaterFiles, bool todeleteFiles, bool deletedFiles)
+        public DataView GetLargestFiles(string statusList, string extensionList, string searchTerm)
         {
-            DataSet fileData = databaseHelper.GetLargestFiles(30, todoFiles, todolaterFiles, todeleteFiles, deletedFiles);
-            //DataSet fileData = databaseHelper.GetLargestFilesTodo(30);
-            //DataSet fileData = databaseHelper.GetListOfFilesWithExtensionMatchingSearchString(".mp3", "salsa");
-            return fileData.Tables[0].DefaultView;
+           DataSet fileData = databaseHelper.GetLargestFiles(30, statusList, extensionList, searchTerm);
+           // DataSet fileData = databaseHelper.GetLargestFilesTodo(30);
+           // // will add the other filters in a bit, start with this...
+           // //DataSet fileData = databaseHelper.GetListOfFilesWithCustomQuery();
+           //// DataSet fileData = databaseHelper.GetListOfFilesWithExtensionMatchingSearchString(".jpg", "candids_200");
+           return fileData.Tables[0].DefaultView;
         }
 
        
@@ -110,18 +115,34 @@ namespace Viweer
             databaseHelper.SetToLater(filehash);
         }
 
-        public bool DeleteDirectory(string dirpathHash, string dirPath)
+        // should merge with DeleteDirectory, pass status in as a parameter
+        public bool MarkDirectoryTodoLater(string dirpathHash, string dirPath, string newStatus)
         {
             string pathFromDb = databaseHelper.GetDirectoryPathForDirHash(dirpathHash);
 
-            if (! dirPath.Equals(pathFromDb))
-            return false;
+            if (!dirPath.Equals(pathFromDb))
+                return false;
 
-            databaseHelper.DeleteDirectoryAndContents(dirpathHash);
+            databaseHelper.UpdateStatusForDirectoryAndContents(dirpathHash, newStatus);
             return true;
         }
 
-        public async Task HashFile(string originalFilePath, string depotRoot)
+        public async Task UpdateStatusForCorrespondingFile(string filePath, string newStatus)
+        {
+            await Task.Run(() =>
+            {
+                string hashValue = SH1HashUtilities.HashFile(filePath);
+                FileInfo fileInfo = new FileInfo(filePath);
+
+                if (databaseHelper.FileAlreadyInDatabase(hashValue, fileInfo.Length))
+                {
+                    databaseHelper.SetNewStatusIfNotDeleted(hashValue, newStatus);
+                }
+            }
+                );
+        }
+
+        public async Task HashFile(string originalFilePath, string depotRoot, bool setAsLink, bool moveInsteadOfCopy)
         {
             await Task.Run(() =>
             {
@@ -136,9 +157,24 @@ namespace Viweer
                         // technically this should not happen - we already checked the database. maybe throw an exception?
                         throw new Exception(String.Format("File {0} already exists ", objectStoreFileName));
 
-                    File.Copy(originalFilePath, objectStoreFileName);
+                    if (moveInsteadOfCopy)
+                        File.Move(originalFilePath, objectStoreFileName);
+                    else
+                        File.Copy(originalFilePath, objectStoreFileName);
+
                     databaseHelper.AddFile(hashValue, fileInfo.Length);
                     databaseHelper.AddFileLocation(hashValue, depotRoot);
+                }
+                else
+                {
+                    Console.WriteLine("TEMPORARY DEBUG OUTPUT: file already in database!");
+                }
+
+                // link file even if file in db already, as may be linking to existing file
+                if (setAsLink)
+                {
+                    string originalFileHash = System.IO.Path.GetFileNameWithoutExtension(originalFilePath).Substring(0, 40);
+                    databaseHelper.SetLink(originalFileHash, hashValue);
                 }
 
                 // always add directory info even if file is in db already, as may be a different copy and name
@@ -189,17 +225,6 @@ namespace Viweer
 
         }
 
-        public void MarkFilesInToDeleteDirectories()
-        {
-            List<string> dirList = databaseHelper.GetDirPathHashListForToDeleteDirectories();
-
-
-            foreach (string dirpathHash in dirList)
-            {
-                SetDirectoryDeleteState(dirpathHash);
-            }
-        }
-
         public bool updateObjectStoreLocation(string oldPath, string newPath)
         {
             int? id = databaseHelper.GetObjectStoreId(oldPath);
@@ -218,6 +243,13 @@ namespace Viweer
         public void AddOriginalRootDirectory(string dirPath)
         {
             databaseHelper.AddOriginalRootDirectoryIfNotInDb(dirPath);
+        }
+
+        public void UpdateDirListing(string dirPath)
+        {
+            string hashValue = SH1HashUtilities.HashString(dirPath);
+            databaseHelper.UpdateFileAndSubDirListForDir(hashValue);
+
         }
 
         public void AddOriginalSubDirectory(string dirPath)
@@ -242,7 +274,10 @@ namespace Viweer
 
         }
 
-
+        public List<string> GetRootDirectories()
+        {
+            return databaseHelper.GetRootDirectories();
+        }
 
 
         public string LogMessage()
@@ -252,6 +287,8 @@ namespace Viweer
             logText += "Files not added as already in database: " + databaseHelper.NumOfDuplicateFiles + Environment.NewLine;
             logText += "file locations added to database: " + databaseHelper.NumOfNewFileLocations + Environment.NewLine;
             logText += "locations not added as already in database: " + databaseHelper.NumOfDuplicateFileLocations + Environment.NewLine;
+            logText += "Num of files with status change: " + databaseHelper.NumOfFilesWithStatusChange + Environment.NewLine;
+            logText += "Num of files already deleted: " + databaseHelper.NumOfFilesAlreadyDeleted + Environment.NewLine;
             return logText;
         }
     }

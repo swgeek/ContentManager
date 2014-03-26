@@ -18,6 +18,8 @@ namespace DbInterface
         private DbInterface db;
 
         public int NumOfNewFiles { get; private set; }
+
+        // Hmmm, this is not used. Maybe should be using this instead of fileLocations, i.e. may be doing it wrong right now
         public int NumOfNewDirectoryMappings { get; private set; }
         public int NumOfDuplicateFiles { get; private set; }
         public int NumOfDuplicateDirectoryMappings { get; private set; }
@@ -30,14 +32,21 @@ namespace DbInterface
         public int NumOfNewFileLocations { get; private set; }
         public int NumOfDuplicateFileLocations { get; private set; }
 
+        public int NumOfFilesWithStatusChange { get; private set; }
+        public int NumOfFilesAlreadyDeleted { get; private set; }
+
         private const string FilesTable = "FilesV2";
         private const string OriginalDirectoriesForFileTable = "OriginalDirectoriesForFileV5";
         private const string OldOriginalDirectoriesForFileTable = "OriginalDirectoriesForFileV2";
         private const string OriginalDirectoriesTable = "originalDirectoriesV2";
+        private const string OriginalRootDirectoriesTable = "originalRootDirectories";
         private const string ObjectStoresTable = "objectStores";
         private const string FileLocationsTable = "fileLocations";
         private const string FileListingForDirTable = "FileListingForDir";
         private const string SubdirListingForDirTable = "SubdirListingForDir";
+        private const string FileLinkTable = "FileLink";
+
+
 
         public DbHelper(string databaseFilePathName)
         {
@@ -75,7 +84,7 @@ namespace DbInterface
         }
 
 
-
+    
 
 
 
@@ -104,8 +113,8 @@ namespace DbInterface
         {
             db.OpenConnection();
 
-            //string createTableCommand = "create table FileListingForDir (dirPathHash char(40) PRIMARY KEY, files varchar(64000));";
-            //db.ExecuteNonQuerySql(createTableCommand);
+            string createTableCommand = "create table FileListingForDir (dirPathHash char(40) PRIMARY KEY, files varchar(64000));";
+            db.ExecuteNonQuerySql(createTableCommand);
 
             // transfer data
             string transferCommand = String.Format("insert into {0} (dirPathHash, files) select dirPathHash, group_concat(filehash, ';') " + 
@@ -134,6 +143,63 @@ namespace DbInterface
 
             //string subdircommand = "select dirPathHash, group_concat(subdirPathHash, ';') from originalDirToSubdir group by dirPathHash";
         }
+
+        public void UpdateFileAndSubDirListForDir(string dirPathHash)
+        {
+            
+            // this inserts only, need to check if exists and update...
+            string transferCommand = String.Format("insert or replace into {0} (dirPathHash, files) select dirPathHash, group_concat(filehash, ';') " +
+     " from {1} where dirPathHash = \"{2}\" group by dirPathHash;", FileListingForDirTable, OriginalDirectoriesForFileTable, dirPathHash);
+            db.ExecuteNonQuerySql(transferCommand);
+
+
+
+            transferCommand = String.Format("insert or replace into {0} (dirPathHash, subdirs) select dirPathHash, group_concat(subdirPathHash, ';') " +
+                " from {1} where dirPathHash = \"{2}\" group by dirPathHash;", SubdirListingForDirTable, "originalDirToSubdir", dirPathHash);
+            db.ExecuteNonQuerySql(transferCommand);
+
+        }
+
+        public void createLinkTable()
+        {
+            db.OpenConnection();
+
+            string createTableCommand = String.Format("create table {0} (filehash char(40) PRIMARY KEY, linkFileHash char(40));",
+                FileLinkTable);
+            db.ExecuteNonQuerySql(createTableCommand);
+
+            db.CloseConnection();
+
+        }
+
+        // temporary code to delete the link files, the initial set were not what I wanted
+        // eventually will have to do more if do this again, e.g. update status of files that link to this, but for now...
+        public void DeleteLinkFiles()
+        {
+
+            db.OpenConnection();
+
+            string sqlCommand = String.Format("update FilesV2 set status = \"todelete\"  where filehash in " + 
+                " (select FilesV2.filehash from FilesV2, FileLink where FilesV2.filehash = FileLink.linkFileHash); ");
+            db.ExecuteNonQuerySql(sqlCommand);
+
+            db.CloseConnection();
+        }
+
+        // set file status to "error" if location indicates error. The location error state is set by backup code when cannot copy
+        // a file, this method propogates that status. Should probably change backup code to set error status as well so do not need this.
+        public void SetErrorState()
+        {
+            db.OpenConnection();
+
+            string sqlCommand = String.Format("update FilesV2 set status = \"error\"  where filehash in " +
+                " (select filehash from fileLocations where objectStore3 = 23 or objectStore2 = 23); ");
+            db.ExecuteNonQuerySql(sqlCommand);
+
+            db.CloseConnection();
+
+        }
+
         // temporary code to copy data to new version of a particular table. Leave code here for now in case need to do something similar in the future
         public void TransferDataToNewVersionOfTable()
         {
@@ -198,17 +264,16 @@ namespace DbInterface
             return exists;
         }
 
-        public bool FileAlreadyInDatabaseUnknownSize(string hash)
+        public bool FileAlreadyInDatabaseUnknownSize(string filehash)
         {
             bool exists = false;
 
             // probably not optimal, but get it working, find best way later.
-            string commandString = String.Format("select * from files where hash = \"{0}\"", hash);
+            string commandString = String.Format("select * from {0} where filehash = \"{1}\"", FilesTable, filehash);
             SQLiteDataReader reader = db.GetDataReaderForSqlQuery(commandString);
             while (reader.Read())
             {
                 exists = true;
-                NumOfDuplicateFiles++;
             }
 
             return exists;
@@ -248,7 +313,49 @@ namespace DbInterface
             {
                     exists = true;
             }
+
+            if (exists)
+                NumOfDuplicateFileLocations++;
+
             return exists;
+        }
+
+        public void SetLink(string filehash, string linkFileHash)
+        {
+            if (FileAlreadyInDatabaseUnknownSize(filehash))
+            {
+                // Temporary! Should not just ignore if different link file, maybe prompt user, but will do for now...
+                string sqlCommand = String.Format("insert or ignore into {0} (filehash, linkFileHash) values (\"{1}\", \"{2}\");",
+                    FileLinkTable, filehash, linkFileHash);
+                db.ExecuteNonQuerySql(sqlCommand);
+            }
+            else
+                throw new Exception(filehash + "not in database, trying to set link to " + linkFileHash);
+
+        }
+
+        // temporary, used when psd files where first linked. But may need some variation again, who knows. Sets every single file that has a link
+        // to status "replacedbyLink"
+        public void TemporarySetLinkStatusForAllFilesInLinkTable()
+        {
+            string sqlCommand = String.Format("select filehash from {0}", FileLinkTable);
+            List<string> fileList = db.ExecuteSqlQueryForStrings(sqlCommand);
+
+            foreach (string filehash in fileList)
+                SetFileToReplacedByLink(filehash);
+        }
+
+        public void SetFileToReplacedByLink(string filehash)
+        {
+            string sqlCommand = String.Format("select count(filehash) from {0} where filehash = \"{1}\";", FileLinkTable, filehash);
+            int? count = db.ExecuteSqlQueryReturningSingleInt(sqlCommand);
+
+            if (count == 0)
+                throw new Exception(filehash + "does not exist in links table, cannot set status to replacedByLink");
+
+            string setStatusSqlCommand = String.Format("update {0} set status = \"replacedByLink\" where filehash = \"{1}\"; ",
+                FilesTable, filehash);
+            db.ExecuteNonQuerySql(setStatusSqlCommand);
         }
 
         public void AddOriginalFileLocation(string hashValue, string filePath)
@@ -268,6 +375,7 @@ namespace DbInterface
                     OriginalDirectoriesForFileTable, hashValue, filename, dirHash, extension);
 
                 db.ExecuteNonQuerySql(addOriginalFileLocationSqlString);
+                NumOfNewFileLocations++;
             }
         }
 
@@ -287,37 +395,57 @@ namespace DbInterface
             return exists;
         }
 
-        // removes fileinfo from db completely, used when added in error, e.g. xml files added early on
-        // for now just two tables, but will be more thorough later on...
-        public void RemoveFileCompletely(string filename)
+        // (recursively) removes a directory and contents completely, used when added in error, e.g. link files that were not optimal
+        public void RemoveDirCompletely(string dirPathHash)
         {
-            string countFileEntriesSql = String.Format( "select count(*) from {0} where filehash = \"{1}\";",FilesTable, filename);
-            int countBefore = (int)db.ExecuteSqlQueryReturningSingleInt(countFileEntriesSql);
-            if (countBefore > 0)
-            {
-                string deleteFileSql = String.Format("delete from {0} where filehash = \"{1}\";", FilesTable, filename);
-                db.ExecuteNonQuerySql(deleteFileSql);
-                int countAfter = (int)db.ExecuteSqlQueryReturningSingleInt(countFileEntriesSql);
+            // have to remove from these tables currently, update code if this has changed
+            // originalDirToSubdir, originalDirectoriesV2, originalRootDirectories, SubdirListingForDir, FileListingForDir
+            // also remove file references, another method does that
 
-                if (countAfter < countBefore)
-                    Console.WriteLine(filename + "Deleted from Files");
-                else
-                    Console.WriteLine(filename + "not deleted");
-            }
+            // Does not remove physical files, assumed that is handled elsewhere, this is database only
 
-            string countLocationEntriesSql = String.Format("select count(*) from {0} where filehash = \"{1}\";", FileLocationsTable, filename);
-            countBefore = (int)db.ExecuteSqlQueryReturningSingleInt(countLocationEntriesSql);
-            if (countBefore > 0)
-            {
-                string deleteLocationSql = String.Format("delete from {0} where filehash = \"{1}\";",FileLocationsTable, filename);
-                db.ExecuteNonQuerySql(deleteLocationSql);
-                int countAfter = (int)db.ExecuteSqlQueryReturningSingleInt(countLocationEntriesSql);
+            // NOT IMPLEMENTED YET, TODO!
 
-                if (countAfter < countBefore)
-                    Console.WriteLine(filename + " Deleted from fileLocations");
-                else
-                    Console.WriteLine(filename + "not deleted");
-            }
+
+        }
+
+        // removes fileinfo from db completely, used when added in error, e.g. xml or link files added early on
+        public void RemoveFileCompletely(string filehash)
+        {
+            // have to remove from these tables currently: update code if this has changed
+            // FilesV2, FileListingForDir, FileLink, OriginalDirectoresForFileV5, fileLocations
+            // in future set this as a transaction or something so can roll back if any one part is interuppted.
+
+            // 1) remove from FilesV2
+
+            string deleteFileSql = String.Format("delete from {0} where filehash in (select filehash from {0} where filehash = \"{1}\");", 
+                FilesTable, filehash);
+            db.ExecuteNonQuerySql(deleteFileSql);
+
+            // skip this for now, will remove dir from dir tables directly as will remove all files from that dir for now...
+            // remove from FileListingForDir
+            // get parent dir
+            // remove self from filelisting from parent dir
+
+
+            // remove from FileLink
+            string deleteFileLinkSql = String.Format("delete from {0} where filehash in (select filehash from {0} where filehash = \"{1}\");",
+                FileLinkTable, filehash);
+            db.ExecuteNonQuerySql(deleteFileLinkSql);
+
+            string deleteFileLinkSql2 = String.Format("delete from {0} where linkFileHash in (select linkFileHash from {0} where linkFileHash = \"{1}\");",
+                FileLinkTable, filehash);
+            db.ExecuteNonQuerySql(deleteFileLinkSql2);
+
+            // remove from OriginalDirectoriesForFileV5
+            string deleteDirsForFileSql = String.Format("delete from {0} where filehash in (select filehash from {0} where filehash = \"{1}\");",
+                OriginalDirectoriesForFileTable, filehash);
+            db.ExecuteNonQuerySql(deleteDirsForFileSql);
+
+            // remove from filelocations
+            string deleteFromLocationsSql = String.Format("delete from {0} where filehash in (select filehash from {0} where filehash = \"{1}\");",
+                FileLocationsTable, filehash);
+            db.ExecuteNonQuerySql(deleteFromLocationsSql);
         }
 
 
@@ -348,6 +476,7 @@ namespace DbInterface
 
 
        // string dirToSubdirSqlString = "create table originalDirToSubdir (dirPathHash char(40), subdirPathHash char(40), PRIMARY KEY (dirPathHash, subdirPathHash))";
+        // THIS IS THE OLD WAY! Need to update SubdirListingForDir!!
         public void AddDirSubdirMapping(string dirPathHash, string subdirPathHash)
         {
             string insertCommandString =
@@ -367,6 +496,10 @@ namespace DbInterface
             NumOfNewDirSubDirMappings  = 0;
             NumOfDuplicateDirs = 0;
             NumOfDuplicateDirSubDirMappings = 0;
+
+            NumOfFilesWithStatusChange = 0;
+            NumOfFilesAlreadyDeleted = 0;
+
         }
 
         public DataSet GetLargestFilesTodo(int numOfFiles)
@@ -399,14 +532,42 @@ namespace DbInterface
             return db.ExecuteSqlQueryForStrings(locationsCommand);
         }
 
+        // temporary, can use getFiles for this but need to do something quickly
+        public List<string> TempGetErrorStateFiles()
+        {
+            string sqlCommand = String.Format("select filehash from {0} where (objectStore1 = 23 or objectStore2 = 23 or objectStore3 = 23) " + 
+              //  " and filehash in (select filehash from {1}) ; ",
+             ";",   FileLocationsTable, OriginalDirectoriesForFileTable);
+            return db.ExecuteSqlQueryForStrings(sqlCommand);
+        }
+
+        public List<String> TemporaryGetUndeletedFilesWithOnlyOneLocationFromObjectStore5(int numOfFiles)
+        {
+            string sqlCommand = String.Format("select filehash from (select filehash from {0} where objectStore1 = 5 and objectStore2 is null " +
+                " and objectStore3 is null) join {1} using (filehash) where status <> \"error\" and status <> \"deleted\" and status <> \"todelete\" and " + 
+                " status <> \"replacedByLink\" limit {2};",
+                FileLocationsTable, FilesTable, numOfFiles);
+
+            return db.ExecuteSqlQueryForStrings(sqlCommand);
+        }
+
         public DataSet GetLargestFiles(int numOfFiles, bool includeTodo, bool includeTodoLater, bool includeToDelete, bool includeDeleted)
+        {
+            string commandString = buildCommandStringPart1(numOfFiles, includeTodo, includeTodoLater, includeToDelete, includeDeleted);
+            // for now always assume 30 largest files, but make that optional and allow number to be specified as well...
+            commandString = commandString + " order by filesize desc limit 30; ";
+            return db.GetDatasetForSqlQuery(commandString);
+        }
+
+        // maybe change this to accept a list or string of status values to look for, this is bad form
+        public string buildCommandStringPart1(int numOfFiles, bool includeTodo, bool includeTodoLater, bool includeToDelete, bool includeDeleted)
         {
             string commandString;
 
             if (includeTodo && includeTodoLater && includeToDelete && includeDeleted)
             {
                 // everything chosen, simplify the query
-                commandString = String.Format("select filehash, status from {0} order by filesize desc limit {1}", FilesTable, numOfFiles);
+                commandString = String.Format("select filehash, status from {0}", FilesTable);
             }
             else
             {
@@ -424,18 +585,109 @@ namespace DbInterface
 
                 if (includeDeleted)
                     commandString = commandString + " or status = \"deleted\"";
-
-                commandString = commandString + " order by filesize desc limit " + numOfFiles.ToString() + ";";
-
-
             }
-            return db.GetDatasetForSqlQuery(commandString);
+
+            //// TEMPORARY!!
+            //commandString = String.Format("select filehash, status from {0} where status = \"error\" ", FilesTable);
+            return commandString;
         }
 
+        string JoinStringIfNeeded(string extensionList, string searchTerm)
+        {
+            if (extensionList == null && searchTerm == null)
+                return "";  // no join needed
+            else
+                return String.Format(" join {0} using (filehash) ", OriginalDirectoriesForFileTable);
+        }
+
+        string BuildExtensionSubQuery(string extensionList)
+        {
+           // get list of all files with given extensions 
+            if (extensionList == null)
+                return "(1)";
+            else
+                return String.Format("( extension COLLATE NOCASE IN ({0}) )", extensionList);
+        }
+
+        string BuildSearchSubQuery(string searchTerm)
+        {
+           // get list of all files with given extensions 
+            if (searchTerm == null)
+                return "(1)";
+            else
+                return String.Format(" filename like %{0}% ",searchTerm);
+        }
+
+        string BuildStatusSubQuery(string statusList)
+        {
+            // get list of all files with given extensions 
+            if (statusList == null)
+                return "(1)";
+            else
+                return String.Format("( status COLLATE NOCASE IN ({0}) )", statusList);
+        }
+
+        string BuildFileLimitSubString(int numOfFiles)
+        {
+            return String.Format(" order by filesize desc limit {0}", numOfFiles);
+        }
+
+        public DataSet GetLargestFiles(int numOfFiles, string statusList, string extensionList, string searchTerm)
+        {
+
+            string commandPart1 = String.Format("select filehash, status from {0} ", FilesTable);
+
+            string sqlCommand = commandPart1 + JoinStringIfNeeded(extensionList, searchTerm) + " where "
+                + BuildExtensionSubQuery(extensionList) + " and " + BuildSearchSubQuery(searchTerm) + " and "
+                + BuildStatusSubQuery(statusList) + BuildFileLimitSubString(numOfFiles) + ";";
+
+            // temporary, have to deal with errors
+            //string sqlCommand = String.Format("select filehash from {0} " + 
+            //    " where objectStore1 = 23 or objectStore2 = 23 or objectStore3 = 23;", FileLocationsTable);
+
+            return db.GetDatasetForSqlQuery(sqlCommand);
+        }
+
+        //public string buildCommandStringPart2(int numOfFiles, bool includeTodo, bool includeTodoLater, bool includeToDelete, bool includeDeleted)
+        //{
+        //    string commandString;
+
+        //    if (includeTodo && includeTodoLater && includeToDelete && includeDeleted)
+        //    {
+        //        // everything chosen, simplify the query
+        //        commandString = String.Format("select filehash, status from {0} order by filesize desc limit {1}", FilesTable, numOfFiles);
+        //    }
+        //    else
+        //    {
+        //        // using the "filehash not null" just to simplify code to add to the query, can always use "or" after this 
+        //        commandString = String.Format("select filehash, status from {0} where filehash is null", FilesTable);
+
+        //        if (includeTodo)
+        //            commandString = commandString + " or status = \"todo\"";
+
+        //        if (includeTodoLater)
+        //            commandString = commandString + " or status = \"todoLater\"";
+
+        //        if (includeToDelete)
+        //            commandString = commandString + " or status = \"todelete\"";
+
+        //        if (includeDeleted)
+        //            commandString = commandString + " or status = \"deleted\"";
+
+        //        commandString = commandString + " order by filesize desc limit " + numOfFiles.ToString() + ";";
+
+
+        //    }
+        //    return db.GetDatasetForSqlQuery(commandString);
+        //}
+
+
+ 
         // should find a way to roll these queries into one routine, but for now...
         public List<string> GetListOfFilesToDelete()
         {
             string commandString = String.Format("select filehash from {0} where status = \'todelete\';", FilesTable);
+            //string commandString = String.Format("select filehash from {0} where status = \'replacedByLink\';", FilesTable);
             return db.ExecuteSqlQueryForStrings(commandString);
         }
 
@@ -450,6 +702,12 @@ namespace DbInterface
         {
             string commandString = String.Format("select id, dirPath from {0};", ObjectStoresTable);
             return db.GetDatasetForSqlQuery(commandString).Tables[0];
+        }
+
+        public List<string> GetRootDirectories()
+        {
+            string commandString = String.Format("select rootdir from {0};", OriginalRootDirectoriesTable);
+            return db.ExecuteSqlQueryForStrings(commandString);
         }
 
         // combine this with method above
@@ -532,20 +790,13 @@ namespace DbInterface
             return db.ExecuteSqlQueryForSingleString(commandString);
         }
 
-        public void DeleteDirectoryAndContents(string dirHash)
+        public void UpdateStatusForDirectoryAndContents(string dirHash, string newStatus)
         {
-            // just mark directory to be deleted, delete the contents later...
-            // delete files within directory
-            
-            //// first delete files
-            //string deleteFilesCommand = String.Format("update {0} set status = \"todelete\" where status <> \"deleted\" and " +
-            //    " filehash in (select filehash from {1} where dirPathHash = \"{2}\");", FilesTable, OriginalDirectoriesForFileTable, dirHash);
-            //db.ExecuteNonQuerySql(deleteFilesCommand);
+            // just mark directory for now, update the contents later...
 
-            // delete directory
-            string deleteDirCommand = String.Format("update {0} set status = \"todelete\" where dirPathHash = \"{1}\" and " +
-                "status <> \"deleted\";", OriginalDirectoriesTable, dirHash);
-            db.ExecuteNonQuerySql(deleteDirCommand);
+            string dirCommand = String.Format("update {0} set status = \"{1}\" where dirPathHash = \"{2}\" and " +
+                "status <> \"deleted\";", OriginalDirectoriesTable, newStatus, dirHash);
+            db.ExecuteNonQuerySql(dirCommand);
         }
 
         public DataTable GetListOfFilesInOriginalDirectory(string dirPathHash)
@@ -717,7 +968,6 @@ namespace DbInterface
             if (existingLocations == null)
             {
                 // filehash does not exist in table, insert it
-                NumOfNewFileLocations++;
                 doInsertForAddFreshLocation(filehash, objectStoreID);
                 return;
             }
@@ -734,7 +984,6 @@ namespace DbInterface
                 throw new Exception("already reached max number of locations, cannot add another");
             // TODO: in future will have an additional table to handle more than three location, maybe even more than two.
 
-            NumOfNewFileLocations++;
             InsertAdditionalFileLocation(filehash, objectStoreID);
         }
 
@@ -766,6 +1015,9 @@ namespace DbInterface
         {
             List<int> locationList = GetFileLocations(fileHash);
 
+            if (locationList == null)
+                return null;
+
             List<string> locationPaths = new List<string>();
             
             foreach (int location in locationList)
@@ -790,11 +1042,33 @@ namespace DbInterface
             db.ExecuteNonQuerySql(sqlCommand);
         }
 
+        public string getFileStatus(string filehash)
+        {
+            string sqlCommand = String.Format("select status from {0} where filehash = \'{1}\'; ", FilesTable, filehash);
+            return db.ExecuteSqlQueryForSingleString(sqlCommand);
+        }
+
         public void SetToDelete(string fileHash)
         {
             setFileStatus(fileHash, "todelete");
+            NumOfFilesWithStatusChange++;
         }
 
+        public void SetNewStatusIfNotDeleted(string fileHash, string newStatus)
+        {
+            string status = getFileStatus(fileHash);
+            if (status.Equals("deleted") || status.Equals("replacedbyLink") )
+            {
+                NumOfFilesAlreadyDeleted++;
+            }
+            else
+            {
+                setFileStatus(fileHash, newStatus);
+                NumOfFilesWithStatusChange++;
+            }
+        }
+
+        
         public void SetToLater(string fileHash)
         {
             setFileStatus(fileHash, "todoLater");
@@ -821,14 +1095,46 @@ namespace DbInterface
             return results.Tables[0];
         }
 
+        public DataSet GetListOfFilesWithCustomQuery()
+        {
+            //string commandString = String.Format(
+            //    "select distinct O.filehash from OriginalDirectoriesForFileV5 as O join FileLink " + 
+            //    " where extension = \".psd\" collate nocase " + 
+            //    " and O.filehash not in (select linkFileHash from FileLink) " +
+            //    " and O.filehash not in (select filehash from FileLink);");
+
+
+            string commandString = String.Format("select filehash from FileLink");
+            return db.GetDatasetForSqlQuery(commandString);
+        }
+
+        public DataSet GetListOfFilesWithExtensions(string extensionList)
+        {
+            // get list of all files with given extensions 
+            string commandString = String.Format(
+                "select distinct filehash, filename from {0} join {1} using (dirPathHash) "
+                + "where extension in ( {2}) COLLATE NOCASE; ",
+                OriginalDirectoriesForFileTable, OriginalDirectoriesTable, extensionList);
+
+            return db.GetDatasetForSqlQuery(commandString);
+        }
+
         public DataSet GetListOfFilesWithExtensionMatchingSearchString(string extension, string searchString)
         {
             // get list of all files with given extension in that object store
+            //string commandString = String.Format(
+            //    "select distinct filehash, filename from {0} join {1} using (dirPathHash) "
+            //    + "where extension = \"{2}\" COLLATE NOCASE and "
+            //    + "dirPath like \"%{3}%\"; ",
+            //    OriginalDirectoriesForFileTable, OriginalDirectoriesTable, extension, searchString);
+
+ 
             string commandString = String.Format(
-                "select distinct filehash, filename from {0} join {1} using (dirPathHash) "
-                + "where extension = \"{2}\" COLLATE NOCASE and "
-                + "dirPath like \"%{3}%\"; ",
-                OriginalDirectoriesForFileTable, OriginalDirectoriesTable, extension, searchString);
+    "select distinct filehash, filename from {0}  "
+    + "where "
+    + "filename like \"%{2}%\"; ",
+    OriginalDirectoriesForFileTable, extension, searchString);
+
 
             return db.GetDatasetForSqlQuery(commandString);
         }
@@ -930,10 +1236,12 @@ namespace DbInterface
             return null;
         }
 
-        public List<string> GetDirPathHashListForToDeleteDirectories()
+        public List<string> GetDirPathHashListForDirectoriesWithStatus(string status)
         {
-            string command = String.Format("select dirPathHash from {0} where status = \"todelete\";", OriginalDirectoriesTable);
+            string command = String.Format("select dirPathHash from {0} where status = \"{1}\";", OriginalDirectoriesTable, status);
             return db.ExecuteSqlQueryForStrings(command);
         }
+
+        
     }
 }
