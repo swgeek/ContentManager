@@ -325,9 +325,14 @@ namespace DbInterface
             if (FileAlreadyInDatabaseUnknownSize(filehash))
             {
                 // Temporary! Should not just ignore if different link file, maybe prompt user, but will do for now...
+                //string sqlCommand = String.Format("insert into {0} (filehash, linkFileHash) values (\"{1}\", \"{2}\");",
                 string sqlCommand = String.Format("insert or ignore into {0} (filehash, linkFileHash) values (\"{1}\", \"{2}\");",
                     FileLinkTable, filehash, linkFileHash);
                 db.ExecuteNonQuerySql(sqlCommand);
+
+                string updateStatusCommand = String.Format("update {0} set status = \'replacedByLink\' where filehash = \'{1}\';",
+                    FilesTable, filehash);
+                db.ExecuteNonQuerySql(updateStatusCommand);
             }
             else
                 throw new Exception(filehash + "not in database, trying to set link to " + linkFileHash);
@@ -526,7 +531,7 @@ namespace DbInterface
                 " union select filehash, objectStore2 as o from {0} where o is not null " +
                 " union select filehash, objectStore3 as o from {0} where o is not null " +
                 " ) group by filehash) where K = 1) join {1} using (filehash) " +
-                "where status <> \"deleted\" and status <> \"todelete\" limit {2};", 
+                "where status <> \"deleted\" and status <> \"todelete\" and status <> \"replacedByLink\" limit {2};", 
                 FileLocationsTable, FilesTable, numOfFiles);
 
             return db.ExecuteSqlQueryForStrings(locationsCommand);
@@ -615,7 +620,7 @@ namespace DbInterface
             if (searchTerm == null)
                 return "(1)";
             else
-                return String.Format(" filename like %{0}% ",searchTerm);
+                return String.Format(" filename like \'%{0}%\' ",searchTerm);
         }
 
         string BuildStatusSubQuery(string statusList)
@@ -688,6 +693,14 @@ namespace DbInterface
         {
             string commandString = String.Format("select filehash from {0} where status = \'todelete\';", FilesTable);
             //string commandString = String.Format("select filehash from {0} where status = \'replacedByLink\';", FilesTable);
+            return db.ExecuteSqlQueryForStrings(commandString);
+        }
+
+        public List<string> GetListOfFilesToDeleteWithLocation(int objectStoreID)
+        {
+            string commandString = String.Format("select filehash from {0} join {1} using (filehash) where " + 
+                " (status = \'todelete\' or status = \'replacedByLink\') " +
+                " and (objectStore1 = {2} or objectStore2 = {2} or objectStore3 = {2});", FilesTable, FileLocationsTable, objectStoreID);
             return db.ExecuteSqlQueryForStrings(commandString);
         }
 
@@ -784,6 +797,15 @@ namespace DbInterface
             return db.GetDatasetForSqlQuery(commandString);
         }
 
+        public DataTable GetOriginalDirectoryWithPath(string dirPath)
+        {
+            string commandString = String.Format("select dirPath, dirPathHash, null from {0} where dirPath = \"{1}\";",
+                OriginalDirectoriesTable, dirPath);
+            return db.GetDatasetForSqlQuery(commandString).Tables[0];
+        }
+
+
+
         public string GetDirectoryPathForDirHash(string dirHash)
         {
             string commandString = String.Format("select dirPath from {0} where dirPathHash = \"{1}\";", OriginalDirectoriesTable, dirHash);
@@ -795,7 +817,7 @@ namespace DbInterface
             // just mark directory for now, update the contents later...
 
             string dirCommand = String.Format("update {0} set status = \"{1}\" where dirPathHash = \"{2}\" and " +
-                "status <> \"deleted\";", OriginalDirectoriesTable, newStatus, dirHash);
+                "( status <> \"deleted\" or status is null);", OriginalDirectoriesTable, newStatus, dirHash);
             db.ExecuteNonQuerySql(dirCommand);
         }
 
@@ -1097,14 +1119,23 @@ namespace DbInterface
 
         public DataSet GetListOfFilesWithCustomQuery()
         {
+            // files in linktable but with no corresponding link status in files. Getting so can delete those...
+            string commandString = String.Format("select linkFileHash as filehash from FilesV2 join FileLink using (filehash) where " +
+            //string commandString = String.Format("select filehash from FilesV2 join FileLink using (filehash) where " +
+                " status <> \'replacedByLink\'; ");
+
+
+
+            //// unlinked psd files
             //string commandString = String.Format(
-            //    "select distinct O.filehash from OriginalDirectoriesForFileV5 as O join FileLink " + 
-            //    " where extension = \".psd\" collate nocase " + 
-            //    " and O.filehash not in (select linkFileHash from FileLink) " +
-            //    " and O.filehash not in (select filehash from FileLink);");
+            //    "select distinct filehash from OriginalDirectoriesForFileV5 as O join FilesV2 using (filehash) " +
+            //    " where extension = \".psd\" collate nocase " +
+            //    " and (filehash not in (select linkFileHash from FileLink)) " +
+            //    " and (filehash not in (select filehash from FileLink))" + 
+            //    " and (status <> \'deleted\') and (status <> \'replacedByLink\');");
 
-
-            string commandString = String.Format("select filehash from FileLink");
+            // replace below with custom query
+//            string commandString = String.Format("select filehash from FileLink");
             return db.GetDatasetForSqlQuery(commandString);
         }
 

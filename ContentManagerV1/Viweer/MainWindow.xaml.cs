@@ -96,8 +96,19 @@ namespace Viweer
             if (string.IsNullOrEmpty(destinationDir))
                 return;
 
+            const long minExtraSpaceToLeave = 30000000000;
+            string drivePath = System.IO.Path.GetPathRoot(destinationDir);
+            DriveInfo driveInfo = new DriveInfo(drivePath);
+
+            bool spaceAvailable = driveInfo.AvailableFreeSpace > minExtraSpaceToLeave;
+
             foreach (var selectedItem in fileList.SelectedItems)
             {
+                if (! spaceAvailable)
+                {
+                    MessageBox.Show("Problem: not enough space, change minimum or clear space", "out of space", MessageBoxButton.OK);
+                    return;
+                }
                 DataRowView trythis = selectedItem as DataRowView;
                 string filehash = trythis.Row.ItemArray[0] as string;
                 string filename = viweerHelper.GetFirstFilename(filehash);
@@ -109,10 +120,13 @@ namespace Viweer
 
         private void OnDeleteFile(object sender, RoutedEventArgs e)
         {
-            if (currentFileHash == null)
-                return;
 
-            viweerHelper.DeleteFile(currentFileHash);
+            foreach (var selectedItem in fileList.SelectedItems)
+            {
+                DataRowView trythis = selectedItem as DataRowView;
+                string filehash = trythis.Row.ItemArray[0] as string;
+                viweerHelper.DeleteFile(filehash);
+            }
 
             currentFileHash = null;
 
@@ -141,7 +155,7 @@ namespace Viweer
 
             string statusString = FormatStatusString(todoFiles, todolaterFiles, todeleteFiles, deletedFiles);
 
-            fileList.DataContext = viweerHelper.GetLargestFiles(statusString, extensionString, searchTermString);
+            fileList.DataContext = viweerHelper.GetFileList(statusString, extensionString, searchTermString);
         }
 
         // move this and others to helper, should not be here
@@ -200,7 +214,7 @@ namespace Viweer
             if (newSearchString.Equals("*"))
                 return null;
 
-            newSearchString = "\'" + newSearchString + "\'";
+           // newSearchString = "\'" + newSearchString + "\'";
             return newSearchString;
 
             //string[] searchTerms = inputSearchString.Split(new Char[] { ' ', ',', '\t' });
@@ -405,7 +419,11 @@ namespace Viweer
             Console.WriteLine("selected dir: " + dirpath);
             string dirpathHash = chosenRowData.Row.ItemArray[1] as string;
             Console.WriteLine("selected dir hashvalue: " + dirpathHash);
-            listDirectory(dirpathHash);
+
+            // this is horrible, we have the hashvalue and the path, should be able to simply set instead of querying
+            DataTable dirTable = viweerHelper.DirectoryWithDirPath(dirpath);
+            dirList.DataContext = dirTable;
+
         }
 
         private void extractDirectoryMenuItemClicked(object sender, RoutedEventArgs e)
@@ -461,7 +479,12 @@ namespace Viweer
 
            private void deleteMenuItem_Click(object sender, RoutedEventArgs e)
            {
-
+               foreach (var selectedItem in fileList.SelectedItems)
+               {
+                   DataRowView trythis = selectedItem as DataRowView;
+                   string filehash = trythis.Row.ItemArray[0] as string;
+                   viweerHelper.DeleteFile(filehash);
+               }
            }
 
            private void markToDoLaterMenuItem_Click(object sender, RoutedEventArgs e)
@@ -543,7 +566,10 @@ namespace Viweer
 
            private void rootDirsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
            {
-
+               string selectedItem = rootDirsListBox.SelectedItem.ToString();
+               Console.WriteLine(selectedItem.ToString());
+               DataTable dirTable = viweerHelper.DirectoryWithDirPath(selectedItem);
+               dirList.DataContext = dirTable;
            }
 
            private void todoLaterDirectoryMenuItemClicked(object sender, RoutedEventArgs e)
@@ -559,7 +585,7 @@ namespace Viweer
 
                string dirpathHash = chosenRowData.Row.ItemArray[1] as string;
 
-               if (!viweerHelper.MarkDirectoryTodoLater(dirpathHash, dirpath, "todoLater"))
+               if (!viweerHelper.MarkDirectoryTodoLater(dirpathHash, dirpath, "toSetToTodoLater"))
                    MessageBox.Show("Problem: could not update directory " + dirpath, "Problem", MessageBoxButton.OK);
            }
 
@@ -594,6 +620,21 @@ namespace Viweer
                    countRemainingTextBlock.Text = filelist.Count.ToString();
                }
                reportTextBox.Text = viweerHelper.LogMessage();
+           }
+
+           private void gotoParentDirectoryMenuItemClicked(object sender, RoutedEventArgs e)
+           {
+               var selectedItem = dirList.SelectedItem;
+               Console.WriteLine(selectedItem.ToString());
+               DataRowView chosenRowData = selectedItem as DataRowView;
+               string dirpath = chosenRowData.Row.ItemArray[0] as string;
+               Console.WriteLine("selected dir: " + dirpath);
+               string dirHash = chosenRowData.Row["dirPathHash"].ToString();
+
+               string parentDirectory = Directory.GetParent(dirpath).FullName;
+
+               DataTable dirTable = viweerHelper.DirectoryWithDirPath(parentDirectory);
+               dirList.DataContext = dirTable;
            }
     }
 }

@@ -58,9 +58,10 @@
                     <Grid Background="LightGray" Grid.Row="1" Grid.Column="0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
+
+                        <ScrollViewer>
+                            
 
                         <StackPanel>
                             <CheckBox Name="objectStoreFilterCheckBox" Content="Filter by object store" 
@@ -88,15 +89,15 @@
                             <Button Content="Get Root Directories" Click="getRootDirsButton_Click" />
                             <ListBox IsEnabled="False" Name="rootDirsListBox" Background="LightBlue" 
                                      SelectionChanged="rootDirsList_SelectionChanged" ItemsSource="{Binding}">
-                                
+
                             </ListBox>
                         </StackPanel>
+                        </ScrollViewer>
                     </Grid>
 
 
                     <!-- top pane -->
                     <Grid Background="LightGray" Grid.Row="0" Grid.Column="1">
-
                         <StackPanel Orientation="Horizontal" >
                             <CheckBox Name="todoFilesChoice"  Content="todo" IsChecked="True"/>
                             <CheckBox Name="todeleteFilesChoice" Content="toDelete"/>
@@ -110,15 +111,6 @@
                             <TextBox Name="filenameSearchTextBox" Text="*             " />
                             <Button Background="Green" Name="goButton" Content="Go" Click="goButton_Click" />
                         </StackPanel>
-
-                        <!--<StackPanel>
-                    <RadioButton GroupName="trythis" Content="largest files" IsChecked="True"/>
-                    <RadioButton GroupName="trythis" Content="smallest files" />
-                </StackPanel>-->
-
-                       
-
-
                     </Grid>
 
                     <Grid Grid.Row="1" Grid.Column="1">
@@ -132,7 +124,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
-                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
@@ -168,6 +160,7 @@
                                         <MenuItem Header="delete this directory" Click="deleteDirectoryMenuItemClicked" />
                                         <MenuItem Header="extract directory" Click="extractDirectoryMenuItemClicked" />
                                         <MenuItem Header="set directory todoLater" Click="todoLaterDirectoryMenuItemClicked" />
+                                        <MenuItem Header="goto Parent Directory" Click="gotoParentDirectoryMenuItemClicked" />
                                     </ContextMenu>
                                 </ListView.ContextMenu>
                                 <ListView.View>

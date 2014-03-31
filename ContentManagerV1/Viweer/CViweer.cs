@@ -32,6 +32,14 @@ namespace Viweer
             return dirListData.Tables[0].DefaultView;
         }
 
+        // admittedly a bit of a hack to have a query for this as just one row,
+        // maybe should build the table here, or set values some other way...
+        // leave for now, works well
+        public DataTable DirectoryWithDirPath(string dirPath)
+        {
+            return databaseHelper.GetOriginalDirectoryWithPath(dirPath);
+        }
+
         public DataView FilesInOriginalDirectory(string dirhash)
         {
             DataTable dirListData = databaseHelper.GetListOfFilesInOriginalDirectory(dirhash);
@@ -78,7 +86,7 @@ namespace Viweer
                 return false;
 
             string newPath = System.IO.Path.Combine(destinationDir, filename);
-            if (! File.Exists(newPath))
+            if (! File.Exists(newPath)) 
                 File.Copy(filePath, newPath);
 
             return true;
@@ -94,12 +102,12 @@ namespace Viweer
             databaseHelper.SetToDelete(filehash);
         }
 
-        public DataView GetLargestFiles(string statusList, string extensionList, string searchTerm)
+        public DataView GetFileList(string statusList, string extensionList, string searchTerm)
         {
            DataSet fileData = databaseHelper.GetLargestFiles(30, statusList, extensionList, searchTerm);
            // DataSet fileData = databaseHelper.GetLargestFilesTodo(30);
            // // will add the other filters in a bit, start with this...
-           // //DataSet fileData = databaseHelper.GetListOfFilesWithCustomQuery();
+           //DataSet fileData = databaseHelper.GetListOfFilesWithCustomQuery();
            //// DataSet fileData = databaseHelper.GetListOfFilesWithExtensionMatchingSearchString(".jpg", "candids_200");
            return fileData.Tables[0].DefaultView;
         }
@@ -164,6 +172,9 @@ namespace Viweer
 
                     databaseHelper.AddFile(hashValue, fileInfo.Length);
                     databaseHelper.AddFileLocation(hashValue, depotRoot);
+                    
+                    // TEMPORARY~~~
+                    //databaseHelper.AddOriginalFileLocation(hashValue, originalFilePath);                
                 }
                 else
                 {

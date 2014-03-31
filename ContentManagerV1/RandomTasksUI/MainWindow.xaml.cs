@@ -272,24 +272,28 @@ namespace RandomTasksUI
 
         }
 
-        private void SetDirectoryStatus(string dirpathHash, string newStatus)
+        private void PropogateDirectoryStatus(string dirpathHash, string newStatus)
         {
             string status = databaseHelper.GetStatusOfDirectory(dirpathHash);
-            if (status.Equals("deleted") || status.Equals("replacedByLink"))
+            if ( (status != null) &&  (status.Equals("deleted") || status.Equals("replacedByLink")) )
                 return;
 
             bool canMarkDirectoryAsDeleted = true;
+            bool canMarkDirectoryAsTodoLater = true;
 
             // first do subdirectories
             string[] subDirs = databaseHelper.GetSubdirectories(dirpathHash);
 
             foreach (string subDirPathHash in subDirs)
             {
-                SetDirectoryStatus(subDirPathHash, newStatus);
+                PropogateDirectoryStatus(subDirPathHash, newStatus);
 
                 string subdirState = databaseHelper.GetStatusOfDirectory(subDirPathHash);
-                if (!( subdirState.Equals("deleted") || subdirState.Equals("replacedByLink")))
+                if ((status != null) &&  !(subdirState.Equals("deleted") || subdirState.Equals("replacedByLink")))
                     canMarkDirectoryAsDeleted = false;
+
+                if ((status != null) &&  !(subdirState.Equals("todoLater") || subdirState.Equals("deleted") || subdirState.Equals("replacedByLink")))
+                    canMarkDirectoryAsTodoLater = false;
             }
 
             string[] files = databaseHelper.GetFileListForDirectory(dirpathHash);
@@ -297,20 +301,28 @@ namespace RandomTasksUI
             foreach (string filehash in files)
             {
                 string fileStatus = databaseHelper.GetStatusOfFile(filehash);
-                if (!fileStatus.Equals("deleted"))
-                {
-                    canMarkDirectoryAsDeleted = false;
+                if (fileStatus.Equals("deleted") || fileStatus.Equals("replacedByLink"))
+                    continue;
 
-                    if (! (fileStatus.Equals("deleted") || fileStatus.Equals("replacedByLink")))
-                    {
-                        databaseHelper.setFileStatus(filehash, newStatus);
-                    }
+                databaseHelper.setFileStatus(filehash, newStatus);
+
+                // get new status
+                fileStatus = databaseHelper.GetStatusOfFile(filehash);
+
+                if (! (fileStatus.Equals("deleted") || fileStatus.Equals("replacedByLink")))
+                {
+                    canMarkDirectoryAsDeleted = false;      
+
+                    if (! fileStatus.Equals("todoLater"))
+                        canMarkDirectoryAsTodoLater = false;
                 }
             }
 
+            if (canMarkDirectoryAsTodoLater)
+                databaseHelper.setDirectoryStatus(dirpathHash, "todoLater");
+
             if (canMarkDirectoryAsDeleted)
                 databaseHelper.setDirectoryStatus(dirpathHash, "deleted");
-
         }
 
         private void PropogateStatusChangesforDirectories()
@@ -319,14 +331,14 @@ namespace RandomTasksUI
 
             foreach (string dirpathHash in dirList)
             {
-                SetDirectoryStatus(dirpathHash, "todelete");
+                PropogateDirectoryStatus(dirpathHash, "todelete");
             }
 
-            dirList = databaseHelper.GetDirPathHashListForDirectoriesWithStatus("todoLater");
+            dirList = databaseHelper.GetDirPathHashListForDirectoriesWithStatus("toSetToTodoLater");
 
             foreach (string dirpathHash in dirList)
             {
-                SetDirectoryStatus(dirpathHash, "todoLater");
+                PropogateDirectoryStatus(dirpathHash, "todoLater");
             }
         }
 
@@ -370,6 +382,8 @@ namespace RandomTasksUI
                     }
                 }
 
+                // should also check FileLink table! if deleting link then set original to delete. 
+                // if deleteing something that has a link then set that to delete as well...
                 if (objectStoresForFile.Count == 0)
                 {
                     // yay, removed all copies
@@ -398,13 +412,14 @@ namespace RandomTasksUI
             // make sure files in "todelete" subdirectories are marked for delete
             PropogateStatusChangesforDirectories();
 
-            // very inefficient to do this, should query to get only list for files in this object store, 
-            // but not worth writing extra code for something that happens only rarely
-            List<string> todeleteFileList = databaseHelper.GetListOfFilesToDelete();
+            List<string> todeleteFileList = databaseHelper.GetListOfFilesToDeleteWithLocation(objectStoreIdToDelete);
 
             foreach (string filehash in todeleteFileList)
             {
                 List<string> objectStoresForFile = databaseHelper.GetObjectStorePathsForFile(filehash);
+                if (objectStoresForFile == null)
+                    continue; // need to research this, or maybe remove, but for now...
+
                 // make a copy so can remove items without causing a problem with my foreach loop
                 List<string> objectStoresForFileCopy = new List<string>(objectStoresForFile);
 
@@ -478,9 +493,9 @@ namespace RandomTasksUI
 
                 List<FileInfo> fileList = subDirInfo.GetFiles().ToList();
 
-                // temp, to save time on exceptions
-                if (fileList.Count < 70)
-                    continue;
+                //// temp, to save time on exceptions
+                //if (fileList.Count < 70)
+                //    continue;
 
                 foreach (FileInfo fileInfo in fileList)
                 {
