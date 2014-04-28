@@ -2,10 +2,31 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="MainWindow" Height="350" Width="525"
-        Closing="Window_Closing">
+        Closing="Window_Closing" >
 
-    <Grid>
+<Grid>
         <TabControl  HorizontalAlignment="Stretch"  Grid.Column="1">
+
+            <TabItem Header="db" Name="dbTab" Background="LightGray">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    
+                    <Button Content="New Database" Margin="10" Click="newDatabaseButton_Click"  />
+                    <StackPanel Orientation="Horizontal" Grid.Column="1">
+                        <TextBlock Name="databasePathTextBlock" Text="" Margin="10" />
+                        <Button Name="createDatabaseButton" Content="Create" Margin="10" Click="performCreateDatabaseButton_Click"  Visibility="Collapsed" />
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
             <TabItem Header="Import" Name="importTab" Background="LightGray">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -133,10 +154,11 @@
                         <ListView Margin="5" Grid.RowSpan="2"  ItemsSource="{Binding}" x:Name="fileList" SelectionChanged="fileList_SelectionChanged">
                             <ListView.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="Menu Item" Click="deleteMenuItem_Click" 
+                                    <MenuItem Header="delete" Click="deleteMenuItem_Click" 
                                           CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=filehash}">
                                     </MenuItem>
-                                    <MenuItem Header="Menu Item" Click="markToDoLaterMenuItem_Click">mark todo later</MenuItem>
+                                    <MenuItem Header="STILLTODO: mark todoLater" Click="markToDoLaterMenuItem_Click">mark todo later</MenuItem>
+                                    <MenuItem Header="remove all traces" Click="removeTracesMenuItem_Click"/>
                                 </ContextMenu>
                             </ListView.ContextMenu>
                             <ListView.View>
@@ -231,6 +253,74 @@
                     </Grid>
                 </Grid>
             </TabItem>
+
+            <TabItem Header="Browse" Name="browseTab" Background="LightGray">
+                <Grid >
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    
+                    <Button Name="browseRootDirsButton" Content="Browse Root Directories" Click="browseRootDirsButton_Click" />
+
+                    <ScrollViewer Grid.Row="1">
+                        <!--<TreeView Name="dirTreeView" 
+                                  TreeViewItem.MouseRightButtonUp="dirTreeView_MouseRightButtonUp"
+                                  TreeViewItem.Expanded="dirTreeViewItem_Expanded"
+                                  TreeViewItem.Selected = "dirTreeViewItem_Selected">
+                            <TreeView.ContextMenu>
+                                <ContextMenu  >
+                                    --><!--<ContextMenu  DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">--><!--
+                                    <MenuItem Header="mark duplicates" Click="markDuplicatesForDirMenuItemClick" 
+                                              Tag="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" />
+                                    <MenuItem Header="remove all traces of dir"
+                                              Click="removeDirFromDbCompletelyMenuItemClick"
+                                              Tag="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                </ContextMenu>
+                            </TreeView.ContextMenu>
+                        </TreeView>-->  
+                        
+                        <TreeView Name="dirTreeView">
+                            <TreeView.ItemContainerStyle>
+                                <Style TargetType="{x:Type TreeViewItem}">
+                                    <EventSetter Event="TreeViewItem.Expanded" Handler="dirTreeViewItem_Expanded" />
+                                    <EventSetter Event="TreeViewItem.Selected" Handler="dirTreeViewItem_Selected" />
+                                </Style>
+                            </TreeView.ItemContainerStyle>
+                        </TreeView>
+                    </ScrollViewer>
+                   
+                    
+                    
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <TextBlock Name="dirNameTextBlock"/>    
+                        <Button Content="Remo" />
+                    </StackPanel>
+
+                    <ListView Grid.Column="1" Grid.Row="1" Margin="5" ItemsSource="{Binding}" x:Name="filesInChosenDir">
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="View locations for this file" Click="viewFileLocationsForFileMenuItemClicked" />
+                            </ContextMenu>
+                        </ListView.ContextMenu>
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="200" Header="FilesInDir" DisplayMemberBinding="{Binding Path=filename}" />
+                                <GridViewColumn Width="200" Header="status" DisplayMemberBinding="{Binding Path=status}" />
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
+
+                </Grid>
+            </TabItem>
+
         </TabControl>
     </Grid>
 </Window>

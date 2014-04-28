@@ -68,30 +68,45 @@ namespace DbInterface
 
 
 
-        public void CreateDb(string dbFilePath)
+        public static void CreateDb(string dbFilePath)
         {
             if (System.IO.File.Exists(dbFilePath))
                 throw new Exception("File already exists!");
 
             SQLiteConnection.CreateFile(dbFilePath);
-            string connectionString = String.Format("Data Source={0};Version=3;", dbFilePath);
-            SQLiteConnection dbConnection = new SQLiteConnection(connectionString);
-            dbConnection.Open();
 
-            // create tables
+            DbInterface newDb;
+            newDb = new DbInterface(dbFilePath);
 
-            dbConnection.Close();
+            CreateAllTables(newDb);
         }
 
-
-    
-
-
-
-
-        private void CreateTables()
+        // is schema the right word?
+        private static void CreateTable(string tableName, string tableSchema, DbInterface openDbConnection)
         {
-            db.CreateTables(); // TEMPORARY, the sql needs to reside here, not in db
+            string createTableCommand = String.Format("create table {0} ({1});", tableName, tableSchema);
+            openDbConnection.ExecuteNonQuerySql(createTableCommand);
+        }
+
+        static void CreateAllTables(DbInterface newDb)
+        {
+            newDb.OpenConnection();
+
+            CreateTable(FileLinkTable, "filehash char(40) PRIMARY KEY, linkFileHash char(40)", newDb);
+            CreateTable(FileListingForDirTable, "dirPathHash char(40) PRIMARY KEY, files varchar(64000)", newDb);
+            CreateTable(FilesTable, "filehash char(40) PRIMARY KEY, filesize int, status varchar(60)", newDb);
+            CreateTable(OriginalDirectoriesForFileTable, "filehash char(40), filename varchar(300), "
+                + "dirPathHash char(40), extension varchar(30), PRIMARY KEY (filehash, filename, dirPathHash)", newDb);
+            CreateTable(SubdirListingForDirTable, "dirPathHash char(40) PRIMARY KEY, subdirs varchar(64000)", newDb);
+            CreateTable(FileLocationsTable, "filehash char(40) PRIMARY KEY, objectStore1 int, objectStore2 int, "
+                   + "objectStore3 int, FOREIGN KEY (objectStore1) REFERENCES objectStores(id), FOREIGN KEY (objectStore2) REFERENCES objectStores(id), "
+            + "FOREIGN KEY (objectStore3) REFERENCES objectStores(id)", newDb);
+            CreateTable(ObjectStoresTable, "id INTEGER PRIMARY KEY AUTOINCREMENT,  dirPath varchar(500)", newDb);
+            CreateTable("originalDirToSubdir", "dirPathHash char(40), subdirPathHash char(40), PRIMARY KEY (dirPathHash, subdirPathHash)", newDb);
+            CreateTable("originalDirectoriesV2", "dirPathHash char(40) PRIMARY KEY, dirPath varchar(500), status varchar(60)", newDb);
+            CreateTable(OriginalRootDirectoriesTable, "rootdir varchar(500) PRIMARY KEY", newDb);
+
+            newDb.CloseConnection();
         }
 
         // temporary code to create new version of a particular table. Leave code here for now in case need to do something similar in the
@@ -1073,6 +1088,12 @@ namespace DbInterface
         public void SetToDelete(string fileHash)
         {
             setFileStatus(fileHash, "todelete");
+            NumOfFilesWithStatusChange++;
+        }
+
+        public void SetToRemoveCompletely(string fileHash)
+        {
+            setFileStatus(fileHash, "toRemoveCompletely");
             NumOfFilesWithStatusChange++;
         }
 

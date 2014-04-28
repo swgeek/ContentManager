@@ -33,6 +33,19 @@ namespace Viweer
             this.WindowState = System.Windows.WindowState.Maximized;
         }
 
+
+
+        static public string PickDirAndUpdateTextBlock(System.Windows.Controls.TextBlock textBlock)
+        {
+            string dirPath = MpvUtilities.FilePickerUtility.PickDirectory();
+            if (string.IsNullOrEmpty(dirPath))
+                return null;
+
+            textBlock.Text = dirPath;
+            return dirPath;
+        }
+
+
         private void fileList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (e.AddedItems.Count == 0)
@@ -96,7 +109,7 @@ namespace Viweer
             if (string.IsNullOrEmpty(destinationDir))
                 return;
 
-            const long minExtraSpaceToLeave = 30000000000;
+            const long minExtraSpaceToLeave = 10000000000;
             string drivePath = System.IO.Path.GetPathRoot(destinationDir);
             DriveInfo driveInfo = new DriveInfo(drivePath);
 
@@ -489,6 +502,16 @@ namespace Viweer
 
            private void markToDoLaterMenuItem_Click(object sender, RoutedEventArgs e)
            {
+               foreach (var selectedItem in fileList.SelectedItems)
+               {
+                   DataRowView trythis = selectedItem as DataRowView;
+                   string filehash = trythis.Row.ItemArray[0] as string;
+                   viweerHelper.RemoveCompletelyFile(filehash);
+               }
+           }
+
+           private void removeTracesMenuItem_Click(object sender, RoutedEventArgs e)
+           {
 
            }
 
@@ -636,5 +659,139 @@ namespace Viweer
                DataTable dirTable = viweerHelper.DirectoryWithDirPath(parentDirectory);
                dirList.DataContext = dirTable;
            }
-    }
+
+           private void newDatabaseButton_Click(object sender, RoutedEventArgs e)
+           {
+               if (PickDirAndUpdateTextBlock(databasePathTextBlock) != null)
+               {
+                   string databaseFilePath = System.IO.Path.Combine(databasePathTextBlock.Text, "db.sqlite");
+                   if (File.Exists(databaseFilePath))
+                   {
+                       MessageBox.Show("database file already exists here, pick new location", "cannot create here", MessageBoxButton.OK);
+                       return;
+                   }
+
+                    databasePathTextBlock.Text = databaseFilePath;
+                    createDatabaseButton.Visibility = System.Windows.Visibility.Visible;
+               }
+
+           }
+
+           private void performCreateDatabaseButton_Click(object sender, RoutedEventArgs e)
+           {
+               createDatabaseButton.Visibility = System.Windows.Visibility.Collapsed;
+               //string dbFileName = Viweer.Properties.Settings.Default.DatabaseFilePath;
+               string newDbFilePath = databasePathTextBlock.Text;
+               if (File.Exists(newDbFilePath))
+               {
+                   MessageBox.Show("database file already exists here, pick new location", "cannot create here", MessageBoxButton.OK);
+                   return;
+               }
+
+               viweerHelper.CreateNewDatabase(newDbFilePath);
+           }
+
+           private void browseRootDirsButton_Click(object sender, RoutedEventArgs e)
+           {
+               browseRootDirsButton.Visibility = System.Windows.Visibility.Collapsed;
+               List<string> dirList = viweerHelper.GetRootDirectories();
+               foreach (string rootDir in dirList)
+                   dirTreeView.Items.Add(CreateDirectoryTreeItem(rootDir, rootDir));
+
+           }
+
+
+           private void dirTreeViewItem_Expanded(object sender, RoutedEventArgs e)
+           {
+               TreeViewItem item = e.Source as TreeViewItem;
+
+               if (item == null)
+                   return;
+
+               // for now, always refresh after expanding. May change that later...
+
+               item.Items.Clear();
+               string dirpath = item.Tag as string;
+               if (dirpath == null)
+                   return;
+
+               //returns dirpath, dirhash, status, I think
+               DataView trythis = viweerHelper.SubdirectoriesInDirPath(dirpath);
+
+               foreach (DataRow row in trythis.Table.Rows)
+               {
+                   string subdirPath = row["dirPath"] as string;
+                   string subdirName = System.IO.Path.GetFileName(subdirPath);
+                   item.Items.Add(CreateDirectoryTreeItem(subdirPath, subdirName));
+               }
+           }
+
+           private void dirTreeViewItem_Selected(object sender, RoutedEventArgs e)
+           {
+               TreeViewItem item = e.Source as TreeViewItem;
+
+               if (item == null)
+                   return;
+
+               string dirpath = item.Tag as string;
+               if (dirpath == null)
+                   return;
+
+               dirNameTextBlock.Text = dirpath;
+               filesInChosenDir.DataContext = viweerHelper.FilesInOriginalDirectoryGivenDirPath(dirpath);
+           }
+
+           private TreeViewItem CreateDirectoryTreeItem(string dirPath, string dirName)
+           {
+               // could use newDir as tag, may make life easier
+               // postpone for now...
+               // DirViewModel newDir = new DirViewModel(dirName, dirPath, hash, status);
+               TreeViewItem treeViewItem = new TreeViewItem();
+               treeViewItem.Header = dirName;
+               treeViewItem.Tag = dirPath;
+               treeViewItem.Items.Add("...");
+               return treeViewItem;
+           }
+
+           private void viewFileLocationsForFileMenuItemClicked(object sender, RoutedEventArgs e)
+           {
+           }
+
+           private void markDuplicatesForDirMenuItemClick(object sender, RoutedEventArgs e)
+           {
+
+           }
+
+           private void removeDirFromDbCompletelyMenuItemClick(object sender, RoutedEventArgs e)
+           {
+               var sd = (sender as MenuItem);
+               var sd2 = sd.Tag;
+
+               TreeViewItem item = sd2 as TreeViewItem;
+
+               if (item == null)
+                   return;
+
+               string dirpath = item.Tag as string;
+               if (dirpath == null)
+                   return;
+
+               dirNameTextBlock.Text = String.Format("removing: dirpath");
+
+           }
+
+           private void dirTreeView_MouseRightButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+           {
+
+               var sd = (sender as TreeViewItem);
+               var sd2 = sd.Tag;
+               sd.IsSelected = true;
+
+
+
+           }
+
+
+
+      }
 }

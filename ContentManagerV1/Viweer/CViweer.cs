@@ -26,6 +26,11 @@ namespace Viweer
             databaseHelper.OpenConnection();
         }
 
+        public void CreateNewDatabase(string newDbFilePath)
+        {
+            DbHelper.CreateDb(newDbFilePath);
+        }
+
         public DataView OriginalDirectoriesForFile(string filehash)
         {
             DataSet dirListData = databaseHelper.GetOriginalDirectoriesForFile(filehash);
@@ -40,6 +45,14 @@ namespace Viweer
             return databaseHelper.GetOriginalDirectoryWithPath(dirPath);
         }
 
+        public DataView FilesInOriginalDirectoryGivenDirPath(string dirPath)
+        {
+            string hash = SH1HashUtilities.HashString(dirPath);
+
+            DataTable dirListData = databaseHelper.GetListOfFilesInOriginalDirectory(hash);
+            return dirListData.DefaultView;
+        }
+
         public DataView FilesInOriginalDirectory(string dirhash)
         {
             DataTable dirListData = databaseHelper.GetListOfFilesInOriginalDirectory(dirhash);
@@ -49,6 +62,12 @@ namespace Viweer
         public string OriginalDirectoryPathForDirHash(string dirhash)
         {
             return databaseHelper.GetDirectoryPathForDirHash(dirhash);
+        }
+
+        public DataView SubdirectoriesInDirPath(string dirpath)
+        {
+            string hash = SH1HashUtilities.HashString(dirpath);
+            return SubdirectoriesInOriginalDirectory(hash);
         }
 
         public DataView SubdirectoriesInOriginalDirectory(string dirhash)
@@ -100,6 +119,11 @@ namespace Viweer
         public void DeleteFile(string filehash)
         {
             databaseHelper.SetToDelete(filehash);
+        }
+
+        public void RemoveCompletelyFile(string filehash)
+        {
+            databaseHelper.SetToRemoveCompletely(filehash);
         }
 
         public DataView GetFileList(string statusList, string extensionList, string searchTerm)
