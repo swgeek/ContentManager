@@ -73,6 +73,7 @@
 
             <Button Margin="10" Content="Perform Deletes" Click="deleteButton_Click" />
             <Button Margin="10" Content="Perform Undeletes" Click="undeleteButton_Click" />
+            <Button Content="delete extra copies of ToDo Etc" Click="DeleteExtraTodoButton_Click"/>
 
         </StackPanel>
 

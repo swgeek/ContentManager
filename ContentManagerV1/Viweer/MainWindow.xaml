@@ -52,6 +52,7 @@
                         <StackPanel>
                             <TextBlock Text="number of files remaining:" />
                             <TextBlock Name="countRemainingTextBlock" Margin="5 5 5 25"/>
+                            <TextBlock Name="currentFileTextBlock" Margin="5 5 5 5" />
                             <Button Content="Import Files" Margin="20" Click="startImportButton_Click" />
                             <Button Content="Import As Links" Margin="20" Click="startLinkImportButton_Click" />
                             <Button Content="Delete corresponding files" Margin="20" Click="startDeleteCorrespondingButton_Click" />

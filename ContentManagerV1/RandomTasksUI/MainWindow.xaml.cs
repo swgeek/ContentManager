@@ -200,6 +200,10 @@ namespace RandomTasksUI
             {
                 // temporary
                 List<String> fileList = databaseHelper.GetUndeletedFilesWithOnlyOneLocation(4000);
+
+                if (fileList.Count == 0)
+                    break;
+
                 foreach (string filehash in fileList)
                 {
                     // get object store path
@@ -417,7 +421,9 @@ namespace RandomTasksUI
                     {
                         string filePath = DepotPathUtilities.GetExistingFilePath(objectStoreRoot, filehash);
                         if (!File.Exists(filePath))
-                            throw new Exception(filePath + " does not exist!");
+                            // skip for now, but should really find out why
+                            continue;
+                           // throw new Exception(filePath + " does not exist!");
 
                         File.SetAttributes(filePath, FileAttributes.Normal);
                         File.Delete(filePath);
@@ -728,12 +734,44 @@ namespace RandomTasksUI
                     databaseHelper.setFileStatus(filehash, "todo");
                     databaseHelper.AddFileLocation(filehash, objectStoreId);
 
-                    // change status to what?? 
-                    // also add location
-                    databaseHelper.ReplaceFileLocation(filehash, 23, objectStoreId);
                 }
             }
 
+        }
+
+        private void DeleteExtraTodoButton_Click(object sender, RoutedEventArgs e)
+        {
+            // get drive path
+            string extraBackupStorePath = MpvUtilities.FilePickerUtility.PickDirectory();
+
+            if ((extraBackupStorePath != null) && (Directory.Exists(extraBackupStorePath)))
+            {
+                string[] directoryList = Directory.GetDirectories(extraBackupStorePath);
+                foreach (string directory in directoryList)
+                {
+                    // go through each file in directory, if status=todo then delete file
+                    string[] fileList = Directory.GetFiles(directory);
+                    foreach (string file in fileList)
+                    {
+                        string extension = System.IO.Path.GetExtension(file);
+                        if (extension != null && extension == ".xml")
+                        {
+                            File.Delete(file);
+                            continue;
+                        }
+
+                        string filehash = System.IO.Path.GetFileName(file);
+                        // if status == todo
+                        // ADD SAFETY CHECK THAT THIS IS NOT PRIMARY LOCATION OR A BACKUP!!!
+                        string status = databaseHelper.getFileStatus(filehash);
+                        if (status.Equals("todo"))
+                        {
+                            File.SetAttributes(file, FileAttributes.Normal);
+                            File.Delete(file);
+                        }
+                    }
+               }
+            }
         }
     }
 }

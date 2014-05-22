@@ -602,6 +602,7 @@ namespace DbInterface
 
                 if (includeToDelete)
                     commandString = commandString + " or status = \"todelete\"";
+                
 
                 if (includeDeleted)
                     commandString = commandString + " or status = \"deleted\"";
@@ -659,7 +660,13 @@ namespace DbInterface
 
             string sqlCommand = commandPart1 + JoinStringIfNeeded(extensionList, searchTerm) + " where "
                 + BuildExtensionSubQuery(extensionList) + " and " + BuildSearchSubQuery(searchTerm) + " and "
-                + BuildStatusSubQuery(statusList) + BuildFileLimitSubString(numOfFiles) + ";";
+                + BuildStatusSubQuery(statusList);
+
+            if (numOfFiles > 0)
+                sqlCommand = sqlCommand + BuildFileLimitSubString(numOfFiles);
+                    
+                    
+            sqlCommand = sqlCommand + ";";
 
             // temporary, have to deal with errors
             //string sqlCommand = String.Format("select filehash from {0} " + 

@@ -128,7 +128,7 @@ namespace Viweer
 
         public DataView GetFileList(string statusList, string extensionList, string searchTerm)
         {
-           DataSet fileData = databaseHelper.GetLargestFiles(30, statusList, extensionList, searchTerm);
+           DataSet fileData = databaseHelper.GetLargestFiles(50, statusList, extensionList, searchTerm);
            // DataSet fileData = databaseHelper.GetLargestFilesTodo(30);
            // // will add the other filters in a bit, start with this...
            //DataSet fileData = databaseHelper.GetListOfFilesWithCustomQuery();

@@ -361,7 +361,7 @@ namespace Viweer
             while ((stopProcessing == false) && (filelist != null) && (filelist.Count > 0))
             {
                 string currentPath = filelist.CurrentFile();
-
+                currentFileTextBlock.Text = currentPath;
                 if (System.IO.Directory.Exists(currentPath))
                 {
                     if (!currentPath.Equals(rootDir))
@@ -382,12 +382,17 @@ namespace Viweer
 
                 filelist.RemoveCurrentFile();
                 countRemainingTextBlock.Text = filelist.Count.ToString();
+                if (filelist.Count < 7)
+                    Console.Write(".");
             }
 
+            int dirsleft = directoryList.Count;
             // work with directoryList
             foreach (string dirPath in directoryList)
             {
+                currentFileTextBlock.Text = dirsleft.ToString();
                 viweerHelper.UpdateDirListing(dirPath);
+                dirsleft--;
             }
 
             reportTextBox.Text = viweerHelper.LogMessage();
