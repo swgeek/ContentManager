@@ -67,10 +67,12 @@
             <Button Name="startBackupButton" Content="Start Backup" Click="startBackupButton_Click" Visibility="Hidden" />
             <Button Name="startMoveButton" Content="Start Move" Click="startMoveButton_Click" Visibility="Hidden" />
             <Button Name="startFindErrorFilesButton" Content="Start Looking" Click="startFindErrorFilesButton_Click" Visibility="Hidden" />
+            <Button Name="startTryUndeleteButton" Content="Start Trying to undelete" Click="startTryUndeleteButton_Click" Visibility="Hidden" />
 
             <Button Margin="10" Content="Process Directories statusChanges" Click="processDirectoryStatusChangeButton_Click" />
 
             <Button Margin="10" Content="Perform Deletes" Click="deleteButton_Click" />
+            <Button Margin="10" Content="Perform Undeletes" Click="undeleteButton_Click" />
 
         </StackPanel>
 

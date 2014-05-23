@@ -298,7 +298,7 @@ namespace Viweer
 
             string dirpathHash = chosenRowData.Row.ItemArray[1] as string;
 
-            if (!viweerHelper.MarkDirectoryTodoLater(dirpathHash, dirpath, "todelete"))
+            if (!viweerHelper.ChangeDirectoryStatus(dirpathHash, dirpath, "todelete"))
                 MessageBox.Show("Problem: could not delete directory " + dirpath, "Problem", MessageBoxButton.OK);
         }
 
@@ -608,8 +608,28 @@ namespace Viweer
 
                string dirpathHash = chosenRowData.Row.ItemArray[1] as string;
 
-               if (!viweerHelper.MarkDirectoryTodoLater(dirpathHash, dirpath, "toSetToTodoLater"))
+               if (!viweerHelper.ChangeDirectoryStatus(dirpathHash, dirpath, "toSetToTodoLater"))
                    MessageBox.Show("Problem: could not update directory " + dirpath, "Problem", MessageBoxButton.OK);
+           }
+
+
+
+           private void undeleteDirectoryMenuItemClicked(object sender, RoutedEventArgs e)
+           {
+               var selectedItem = dirList.SelectedItem;
+               Console.WriteLine(selectedItem.ToString());
+               DataRowView chosenRowData = selectedItem as DataRowView;
+               string dirpath = chosenRowData.Row.ItemArray[0] as string;
+
+               MessageBoxResult choice = MessageBox.Show("undelete dir " + dirpath + "?", "undelete?", MessageBoxButton.OKCancel);
+               if (choice != MessageBoxResult.OK)
+                   return;
+
+               string dirpathHash = chosenRowData.Row.ItemArray[1] as string;
+
+               if (!viweerHelper.ChangeDirectoryStatus(dirpathHash, dirpath, "tryToUndelete"))
+                   MessageBox.Show("Problem: could not update directory " + dirpath, "Problem", MessageBoxButton.OK);
+
            }
 
            private void setToLaterCorrespondingButton_Click(object sender, RoutedEventArgs e)
@@ -767,7 +787,7 @@ namespace Viweer
                var sd = (sender as MenuItem);
                var sd2 = sd.Tag;
 
-               TreeViewItem item = sd2 as TreeViewItem;
+               TreeViewItem item = dirTreeView.SelectedItem as TreeViewItem;
 
                if (item == null)
                    return;
@@ -783,13 +803,15 @@ namespace Viweer
            private void dirTreeView_MouseRightButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
            {
 
-               var sd = (sender as TreeViewItem);
+               var sd = e.Source as TreeViewItem;
                var sd2 = sd.Tag;
                sd.IsSelected = true;
 
 
 
            }
+
+
 
 
 

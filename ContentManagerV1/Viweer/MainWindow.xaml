@@ -182,6 +182,7 @@
                                         <MenuItem Header="delete this directory" Click="deleteDirectoryMenuItemClicked" />
                                         <MenuItem Header="extract directory" Click="extractDirectoryMenuItemClicked" />
                                         <MenuItem Header="set directory todoLater" Click="todoLaterDirectoryMenuItemClicked" />
+                                        <MenuItem Header="tryUndelete" Click="undeleteDirectoryMenuItemClicked" />
                                         <MenuItem Header="goto Parent Directory" Click="gotoParentDirectoryMenuItemClicked" />
                                     </ContextMenu>
                                 </ListView.ContextMenu>
@@ -290,8 +291,18 @@
                                 <Style TargetType="{x:Type TreeViewItem}">
                                     <EventSetter Event="TreeViewItem.Expanded" Handler="dirTreeViewItem_Expanded" />
                                     <EventSetter Event="TreeViewItem.Selected" Handler="dirTreeViewItem_Selected" />
+                                    <!--<EventSetter Event="TreeViewItem.MouseRightButtonUp" Handler="dirTreeView_MouseRightButtonUp" />-->
                                 </Style>
                             </TreeView.ItemContainerStyle>
+                            <TreeView.ContextMenu>
+                                <ContextMenu  DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                    <MenuItem Header="mark duplicates" Click="markDuplicatesForDirMenuItemClick" 
+                                              Tag="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" />
+                                    <MenuItem Header="remove all traces of dir"
+                                              Click="removeDirFromDbCompletelyMenuItemClick"
+                                              Tag="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                </ContextMenu>
+                            </TreeView.ContextMenu>
                         </TreeView>
                     </ScrollViewer>
                    

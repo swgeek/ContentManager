@@ -272,6 +272,7 @@ namespace RandomTasksUI
 
         }
 
+        
         private void PropogateDirectoryStatus(string dirpathHash, string newStatus)
         {
             string status = databaseHelper.GetStatusOfDirectory(dirpathHash);
@@ -325,6 +326,43 @@ namespace RandomTasksUI
                 databaseHelper.setDirectoryStatus(dirpathHash, "deleted");
         }
 
+        private bool PropogateTryUndeleteDirectoryStatus(string dirpathHash)
+        {
+            bool successfullyUndeleted = true;
+
+            // first do subdirectories
+            string[] subDirs = databaseHelper.GetSubdirectories(dirpathHash);
+
+            foreach (string subDirPathHash in subDirs)
+            {
+                bool success = PropogateTryUndeleteDirectoryStatus(subDirPathHash);
+                if (!success)
+                    successfullyUndeleted = false;
+            }
+
+            string[] files = databaseHelper.GetFileListForDirectory(dirpathHash);
+
+            foreach (string filehash in files)
+            {
+                string fileStatus = databaseHelper.GetStatusOfFile(filehash);
+                if (fileStatus.Equals("deleted"))
+                    databaseHelper.setFileStatus(filehash, "tryToUndelete");
+
+                if (fileStatus.Equals("deleted") || fileStatus.Equals("tryToUndelete"))
+                    successfullyUndeleted = false;
+            }
+
+
+            if (successfullyUndeleted) 
+            {
+                string status = databaseHelper.GetStatusOfDirectory(dirpathHash);
+                if (status.Equals("tryToUndelete") || status.Equals("deleted"))
+                    databaseHelper.setDirectoryStatus(dirpathHash, "todo"); 
+            }
+
+            return successfullyUndeleted;
+        }
+
         private void PropogateStatusChangesforDirectories()
         {
             List<string> dirList = databaseHelper.GetDirPathHashListForDirectoriesWithStatus("todelete");
@@ -339,6 +377,13 @@ namespace RandomTasksUI
             foreach (string dirpathHash in dirList)
             {
                 PropogateDirectoryStatus(dirpathHash, "todoLater");
+            }
+
+            dirList = databaseHelper.GetDirPathHashListForDirectoriesWithStatus("tryToUndelete");
+
+            foreach (string dirpathHash in dirList)
+            {
+                PropogateTryUndeleteDirectoryStatus(dirpathHash);
             }
         }
 
@@ -635,6 +680,60 @@ namespace RandomTasksUI
         private void processDirectoryStatusChangeButton_Click(object sender, RoutedEventArgs e)
         {
             PropogateStatusChangesforDirectories();
+        }
+
+        private void undeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            UserChooseObjectStoreRoot();
+            startTryUndeleteButton.Visibility = System.Windows.Visibility.Visible;
+        }
+
+        // similar code to find error files, so maybe combine...
+        private void startTryUndeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            string backupStoreRoot = chosenObjectStorePathTextBlock.Text;
+            int objectStoreId;
+            string objectStorePath;
+            GetChosenObjectStore(out objectStoreId, out objectStorePath);
+
+            // get list of files to undelete
+            // for each file, check if it is in the backup store
+            // if yes, copy to current store and update location
+
+            List<string> undeleteFiles = databaseHelper.GetListOfFilesToTryUnDelete();
+
+            foreach (string filehash in undeleteFiles)
+            {
+                if (System.IO.Path.HasExtension(filehash))
+                {
+                    // should never happen, will remove this code eventually, but checking first
+                    string extension = System.IO.Path.GetExtension(filehash);
+                    // should remove from database here...
+                    databaseHelper.RemoveFileCompletely(filehash);
+                    continue;
+                }
+                string filepath = DepotPathUtilities.GetExistingFilePath(backupStoreRoot, filehash);
+                if (File.Exists(filepath))
+                {
+                    string objectStoreFileName = DepotPathUtilities.GetHashFilePathV2(objectStorePath, filehash);
+
+                    if (File.Exists(objectStoreFileName))
+                        continue;
+                    // technically this should not happen - we already checked the database. maybe throw an exception?
+                    // throw new Exception(String.Format("File {0} already exists ", objectStoreFileName));
+
+                    File.Copy(filepath, objectStoreFileName);
+
+                    // the next two steps really should be atomic. Figure out how to do that.
+                    databaseHelper.setFileStatus(filehash, "todo");
+                    databaseHelper.AddFileLocation(filehash, objectStoreId);
+
+                    // change status to what?? 
+                    // also add location
+                    databaseHelper.ReplaceFileLocation(filehash, 23, objectStoreId);
+                }
+            }
+
         }
     }
 }

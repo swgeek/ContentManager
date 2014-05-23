@@ -148,7 +148,7 @@ namespace Viweer
         }
 
         // should merge with DeleteDirectory, pass status in as a parameter
-        public bool MarkDirectoryTodoLater(string dirpathHash, string dirPath, string newStatus)
+        public bool ChangeDirectoryStatus(string dirpathHash, string dirPath, string newStatus)
         {
             string pathFromDb = databaseHelper.GetDirectoryPathForDirHash(dirpathHash);
 

@@ -719,6 +719,14 @@ namespace DbInterface
             return db.ExecuteSqlQueryForStrings(commandString);
         }
 
+        // should find a way to roll these queries into one routine, but for now...
+        public List<string> GetListOfFilesToTryUnDelete()
+        {
+            string commandString = String.Format("select filehash from {0} where status = \'tryToUndelete\';", FilesTable);
+            return db.ExecuteSqlQueryForStrings(commandString);
+        }
+
+
         public DataSet GetFilesFromObjectStore(int objectStoreID)
         {
             string commandString = String.Format("select filehash from {0} where objectStore1 = {1} or objectStore2 = {1} or objectStore3 = {1};",
@@ -830,10 +838,15 @@ namespace DbInterface
         public void UpdateStatusForDirectoryAndContents(string dirHash, string newStatus)
         {
             // just mark directory for now, update the contents later...
+            string dirCommandPart1 = String.Format("update {0} set status = \"{1}\" where dirPathHash = \"{2}\" ", OriginalDirectoriesTable, newStatus, dirHash);
+            string dirCommandPart2;
 
-            string dirCommand = String.Format("update {0} set status = \"{1}\" where dirPathHash = \"{2}\" and " +
-                "( status <> \"deleted\" or status is null);", OriginalDirectoriesTable, newStatus, dirHash);
-            db.ExecuteNonQuerySql(dirCommand);
+            if (newStatus.Equals("tryToUndelete"))
+                dirCommandPart2 = "";
+            else
+                dirCommandPart2 = " and ( status <> \"deleted\" or status is null);";
+
+            db.ExecuteNonQuerySql(dirCommandPart1 + dirCommandPart2);
         }
 
         public DataTable GetListOfFilesInOriginalDirectory(string dirPathHash)
